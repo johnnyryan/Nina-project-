@@ -1,0 +1,7 @@
+{
+  "name": "Help Ireland",
+  "description": "A gamified environmental app that rewards users with Shamrock points for taking eco-friendly and community actions across the Emerald Isle.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
