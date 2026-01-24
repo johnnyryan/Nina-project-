@@ -31,6 +31,14 @@ interface ScrambleItem {
   hint: string;
 }
 
+interface SanctuaryItem {
+  id: string;
+  name: string;
+  icon: string;
+  bioPoints: number;
+  description: string;
+}
+
 // Expanded pools for randomization
 const WILDLIFE_POOL = [
   { icon: '🦊', name: 'Red Fox' },
@@ -102,10 +110,22 @@ const SCRAMBLE_POOL: ScrambleItem[] = [
   { original: 'SEAL', scramble: 'ALES', hint: 'Sleek ocean mammal' }
 ];
 
+const SANCTUARY_ITEMS: SanctuaryItem[] = [
+  { id: 'tree_oak', name: 'Oak Tree', icon: '🌳', bioPoints: 50, description: 'Supports hundreds of species.' },
+  { id: 'fox', name: 'Red Fox', icon: '🦊', bioPoints: 100, description: 'Top predator for a balanced ecosystem.' },
+  { id: 'pond', name: 'Freshwater Pond', icon: '💧', bioPoints: 80, description: 'Vital for amphibians and insects.' },
+  { id: 'flower', name: 'Wildflowers', icon: '🌸', bioPoints: 20, description: 'Attracts bees and butterflies.' },
+  { id: 'stone', name: 'Ancient Stones', icon: '🪨', bioPoints: 15, description: 'Perfect shelter for lizards.' },
+  { id: 'deer', name: 'Red Deer', icon: '🦌', bioPoints: 120, description: 'Majestic forest wanderer.' },
+  { id: 'butterfly', name: 'Butterfly', icon: '🦋', bioPoints: 25, description: 'A sign of a healthy garden.' },
+  { id: 'mushroom', name: 'Fungi', icon: '🍄', bioPoints: 10, description: 'Breaks down organic matter.' },
+  { id: 'clover', name: 'Clover Patch', icon: '🍀', bioPoints: 5, description: 'Small but mighty for the soil.' }
+];
+
 const shuffle = <T,>(array: T[]): T[] => [...array].sort(() => Math.random() - 0.5);
 
 export const WildlifeGames: React.FC<WildlifeGamesProps> = ({ onEarnPoints }) => {
-  const [activeGame, setActiveGame] = useState<'menu' | 'memory' | 'trivia' | 'sorter' | 'scramble' | 'gaeilge' | 'landmarks'>('menu');
+  const [activeGame, setActiveGame] = useState<'menu' | 'memory' | 'trivia' | 'sorter' | 'scramble' | 'gaeilge' | 'landmarks' | 'sanctuary'>('menu');
   
   // Game States
   const [cards, setCards] = useState<{ id: number, icon: string, flipped: boolean, matched: boolean }[]>([]);
@@ -123,6 +143,10 @@ export const WildlifeGames: React.FC<WildlifeGamesProps> = ({ onEarnPoints }) =>
   const [scrambleIndex, setScrambleIndex] = useState(0);
   const [scrambleInput, setScrambleInput] = useState('');
   const [scrambleFeedback, setScrambleFeedback] = useState<'none' | 'correct' | 'wrong' | 'show'>('none');
+
+  // Sanctuary Game State
+  const [sanctuaryGrid, setSanctuaryGrid] = useState<(SanctuaryItem | null)[]>(Array(25).fill(null));
+  const [selectedSanctuaryItem, setSelectedSanctuaryItem] = useState<SanctuaryItem | null>(null);
 
   const startMemoryGame = () => {
     const selectedSpecies = shuffle(WILDLIFE_POOL).slice(0, 8);
@@ -161,6 +185,12 @@ export const WildlifeGames: React.FC<WildlifeGamesProps> = ({ onEarnPoints }) =>
     setScrambleInput('');
     setScrambleFeedback('none');
     setActiveGame('scramble');
+  };
+
+  const startSanctuary = () => {
+    setSanctuaryGrid(Array(25).fill(null));
+    setSelectedSanctuaryItem(null);
+    setActiveGame('sanctuary');
   };
 
   const handleCardClick = (index: number) => {
@@ -234,6 +264,29 @@ export const WildlifeGames: React.FC<WildlifeGamesProps> = ({ onEarnPoints }) =>
     }
   };
 
+  const handlePlaceSanctuaryItem = (index: number) => {
+    if (!selectedSanctuaryItem) return;
+    const newGrid = [...sanctuaryGrid];
+    newGrid[index] = selectedSanctuaryItem;
+    setSanctuaryGrid(newGrid);
+  };
+
+  const calculateBiodiversity = () => {
+    return sanctuaryGrid.reduce((sum, item) => sum + (item?.bioPoints || 0), 0);
+  };
+
+  const handleSubmitSanctuary = () => {
+    const score = calculateBiodiversity();
+    if (score === 0) {
+      alert("Place some items in your sanctuary first!");
+      return;
+    }
+    const reward = Math.floor(score / 50) + 5; // Base reward + scaled reward
+    alert(`Stunning Sanctuary! You achieved a Biodiversity Score of ${score}. ☘️ +${reward} Shamrocks!`);
+    onEarnPoints(reward);
+    setActiveGame('menu');
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
       {activeGame === 'menu' && (
@@ -273,6 +326,12 @@ export const WildlifeGames: React.FC<WildlifeGamesProps> = ({ onEarnPoints }) =>
             <h3 className="text-xl font-black text-emerald-900 mb-2">Wildlife Scramble</h3>
             <p className="text-sm text-gray-500 mb-6">Unscramble 4 random native species names.</p>
             <button onClick={startScramble} className="w-full py-3 bg-purple-500 text-white font-bold rounded-xl shadow-lg hover:bg-purple-600">Play</button>
+          </div>
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border-t-8 border-emerald-500 text-center hover:translate-y-[-4px] transition-all lg:col-span-3">
+            <div className="text-5xl mb-4">🏞️</div>
+            <h3 className="text-2xl font-black text-emerald-900 mb-2">Nature Sanctuary Builder</h3>
+            <p className="text-sm text-gray-500 mb-6">Design your own Irish nature reserve. Place species to increase biodiversity!</p>
+            <button onClick={startSanctuary} className="max-w-xs mx-auto w-full py-4 bg-emerald-900 text-white font-black rounded-2xl shadow-xl hover:bg-black transition-colors">Start Building</button>
           </div>
         </div>
       )}
@@ -466,6 +525,76 @@ export const WildlifeGames: React.FC<WildlifeGamesProps> = ({ onEarnPoints }) =>
                 }} className="w-full py-4 bg-purple-600 text-white font-black rounded-2xl shadow-lg">Next Word</button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {activeGame === 'sanctuary' && (
+        <div className="bg-white rounded-[3rem] p-8 shadow-2xl border border-emerald-100 flex flex-col gap-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-3xl font-black text-emerald-900">Sanctuary Builder</h3>
+              <p className="text-sm text-gray-500">Place items on the grid to create a thriving nature reserve.</p>
+            </div>
+            <div className="flex flex-col items-end">
+              <div className="bg-emerald-100 text-emerald-800 px-4 py-2 rounded-2xl font-black flex items-center gap-2">
+                <span>🦋</span> Bio Score: {calculateBiodiversity()}
+              </div>
+              <button onClick={() => setActiveGame('menu')} className="text-gray-400 font-bold text-xs mt-2 hover:text-emerald-600">Exit Game</button>
+            </div>
+          </div>
+
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* The Grid */}
+            <div className="flex-1">
+              <div className="grid grid-cols-5 gap-1 bg-emerald-50 p-2 rounded-3xl border-2 border-emerald-100 shadow-inner max-w-md mx-auto aspect-square">
+                {sanctuaryGrid.map((item, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handlePlaceSanctuaryItem(idx)}
+                    className={`aspect-square rounded-xl transition-all duration-200 flex items-center justify-center text-3xl hover:bg-emerald-200/50 ${
+                      item ? 'bg-white shadow-sm' : 'bg-transparent'
+                    } ${selectedSanctuaryItem && !item ? 'hover:scale-105 hover:shadow-md border-2 border-dashed border-emerald-200' : 'border-2 border-transparent'}`}
+                  >
+                    {item?.icon}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* The Inventory */}
+            <div className="lg:w-72 bg-emerald-50 rounded-[2.5rem] p-6 border-2 border-emerald-100">
+              <h4 className="font-black text-emerald-900 mb-4 text-sm uppercase tracking-widest">Select Item</h4>
+              <div className="grid grid-cols-3 gap-2">
+                {SANCTUARY_ITEMS.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setSelectedSanctuaryItem(item)}
+                    className={`aspect-square rounded-2xl flex items-center justify-center text-3xl transition-all border-4 ${
+                      selectedSanctuaryItem?.id === item.id 
+                        ? 'border-emerald-600 bg-white scale-110 shadow-lg' 
+                        : 'border-transparent bg-white/50 hover:bg-white hover:border-emerald-200'
+                    }`}
+                    title={item.name}
+                  >
+                    {item.icon}
+                  </button>
+                ))}
+              </div>
+              {selectedSanctuaryItem && (
+                <div className="mt-6 p-4 bg-white rounded-2xl shadow-sm animate-in fade-in zoom-in duration-300">
+                  <div className="font-black text-emerald-900 text-sm mb-1">{selectedSanctuaryItem.name}</div>
+                  <div className="text-[10px] text-emerald-600 font-bold mb-2 uppercase">+ {selectedSanctuaryItem.bioPoints} Bio Points</div>
+                  <p className="text-[10px] text-gray-500 leading-tight">{selectedSanctuaryItem.description}</p>
+                </div>
+              )}
+              <button 
+                onClick={handleSubmitSanctuary}
+                className="w-full mt-6 py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-lg hover:bg-emerald-700 active:scale-95 transition-all"
+              >
+                Submit Sanctuary
+              </button>
+            </div>
           </div>
         </div>
       )}

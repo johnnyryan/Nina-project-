@@ -54,7 +54,7 @@ export const AboutPage: React.FC = () => {
             </div>
             
             <div className="flex gap-2">
-              <span className="px-4 py-2 bg-gray-100 rounded-xl text-xs font-bold text-gray-500 uppercase tracking-widest">Est. 2024</span>
+              <span className="px-4 py-2 bg-gray-100 rounded-xl text-xs font-bold text-gray-500 uppercase tracking-widest">Made in 24/1/2026</span>
               <span className="px-4 py-2 bg-gray-100 rounded-xl text-xs font-bold text-gray-500 uppercase tracking-widest">Dublin, Ireland</span>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { UserProfile, RewardAction, AppView, ShopItem, Badge, ActionType, Leader
 import { REWARD_ACTIONS, MOCK_LEADERBOARD, MOCK_USERS, COLORS, SHOP_ITEMS, BADGES } from './constants';
 import { ActionCard } from './components/ActionCard';
 import { Leaderboard } from './components/Leaderboard';
+import { ChatLeaderboard } from './components/ChatLeaderboard';
 import { VerificationModal } from './components/VerificationModal';
 import { ProfilePage } from './components/ProfilePage';
 import { NeighborhoodChat } from './components/NeighborhoodChat';
@@ -35,11 +36,17 @@ const App: React.FC = () => {
       bio: '',
       avatar: '👤',
       activeTheme: 'th_default',
-      totalShamrocks: 0, // Everyone starts with none
+      totalShamrocks: 0, // Reset to zero as requested
+      goldenShamrocks: 0,
+      isMaster: false,
+      isCaptain: false,
+      isAssistantCaptain: false,
+      hasCaptainTickedGoal: false,
+      hasAssistantTickedGoal: false,
       completedActions: 0,
       completedActionTypes: [],
       joinedDate: new Date().toISOString(),
-      badges: [], // Everyone starts with none
+      badges: [], // Start with zero badges as requested
       unlockedAvatars: ['👤'],
       unlockedThemes: ['th_default'],
       rank: 0
@@ -64,7 +71,29 @@ const App: React.FC = () => {
     const newBadges = [...userProfile.badges];
     let newUnlockedAvatars = [...userProfile.unlockedAvatars];
 
-    if (userProfile.totalShamrocks > 0) { // Only calculate ranks and badges if user has started participating
+    // Master Status Calculation
+    const allAvailableBadgesCount = BADGES.length;
+    const purchasableAvatarsCount = SHOP_ITEMS.filter(i => i.type === 'avatar' && !i.earnedOnly).length + 1;
+    const purchasableThemesCount = SHOP_ITEMS.filter(i => i.type === 'theme').length;
+    
+    const hasAllAvatars = newUnlockedAvatars.length >= purchasableAvatarsCount;
+    const hasAllThemes = userProfile.unlockedThemes.length >= purchasableThemesCount;
+    const hasAllBadges = newBadges.length >= allAvailableBadgesCount;
+    
+    const isMaster = hasAllAvatars && hasAllThemes && hasAllBadges;
+
+    // Roles Logic: First to join is Captain, second is Assistant
+    const neighborhoodNeighbors = MOCK_USERS.filter(u => u.neighborhood === userProfile.neighborhood);
+    const neighborCount = neighborhoodNeighbors.length;
+    
+    const isFirstJoiner = userProfile.neighborhood !== '' && neighborCount === 0;
+    const isSecondJoiner = userProfile.neighborhood !== '' && neighborCount === 1;
+    
+    const isCaptain = isMaster || isFirstJoiner;
+    const isAssistantCaptain = !isCaptain && isSecondJoiner;
+
+    // Calculate ranks and badges based on the user's progress
+    if (userProfile.totalShamrocks > 0) { 
       if (myRank === 1 && !newBadges.includes('rank1')) {
         newBadges.push('rank1');
         if (!newBadges.includes('b8')) newBadges.push('b8');
@@ -87,7 +116,6 @@ const App: React.FC = () => {
       newBadges.push('b7');
     }
 
-    // Award badge for completing all types of actions
     const totalActionTypes = Object.keys(ActionType).length;
     if (userProfile.completedActionTypes.length >= totalActionTypes && !newBadges.includes('b_all_actions')) {
       newBadges.push('b_all_actions');
@@ -98,37 +126,32 @@ const App: React.FC = () => {
     const diffTime = Math.abs(now.getTime() - joinedDate.getTime());
     const diffYears = diffTime / (1000 * 60 * 60 * 24 * 365.25);
 
-    if (diffYears >= 1 && !newBadges.includes('b_year1')) {
-      newBadges.push('b_year1');
-    }
-    if (diffYears >= 5 && !newBadges.includes('b_year5')) {
-      newBadges.push('b_year5');
-    }
-    if (diffYears >= 10 && !newBadges.includes('b_year10')) {
-      newBadges.push('b_year10');
-    }
+    if (diffYears >= 1 && !newBadges.includes('b_year1')) newBadges.push('b_year1');
+    if (diffYears >= 5 && !newBadges.includes('b_year5')) newBadges.push('b_year5');
+    if (diffYears >= 10 && !newBadges.includes('b_year10')) newBadges.push('b_year10');
 
     newBadges.forEach(badgeId => {
       const badgeObj = BADGES.find(b => b.id === badgeId);
-      if (badgeObj && !newUnlockedAvatars.includes(badgeObj.icon)) {
-        newUnlockedAvatars.push(badgeObj.icon);
-      }
+      if (badgeObj && !newUnlockedAvatars.includes(badgeObj.icon)) newUnlockedAvatars.push(badgeObj.icon);
     });
 
     const badgesChanged = JSON.stringify(newBadges.sort()) !== JSON.stringify([...userProfile.badges].sort());
     const avatarsChanged = JSON.stringify(newUnlockedAvatars.sort()) !== JSON.stringify([...userProfile.unlockedAvatars].sort());
 
-    if (userProfile.rank !== myRank || badgesChanged || avatarsChanged) {
+    if (userProfile.rank !== myRank || badgesChanged || avatarsChanged || userProfile.isMaster !== isMaster || userProfile.isCaptain !== isCaptain || userProfile.isAssistantCaptain !== isAssistantCaptain) {
       setUserProfile(prev => ({ 
         ...prev, 
         rank: myRank, 
         badges: newBadges,
-        unlockedAvatars: newUnlockedAvatars 
+        unlockedAvatars: newUnlockedAvatars,
+        isMaster,
+        isCaptain,
+        isAssistantCaptain
       }));
     }
     
     localStorage.setItem('help-ireland-profile-v5', JSON.stringify(userProfile));
-  }, [userProfile.totalShamrocks, userProfile.completedActions, userProfile.rank, userProfile.joinedDate, userProfile.completedActionTypes, userProfile.county]);
+  }, [userProfile.totalShamrocks, userProfile.completedActions, userProfile.rank, userProfile.joinedDate, userProfile.completedActionTypes, userProfile.county, userProfile.neighborhood, userProfile.unlockedThemes, userProfile.badges, userProfile.unlockedAvatars]);
 
   const handleActionComplete = (points: number, actionId: ActionType) => {
     setUserProfile(prev => {
@@ -153,6 +176,37 @@ const App: React.FC = () => {
       totalShamrocks: prev.totalShamrocks + points
     }));
     triggerConfetti();
+  };
+
+  const handleIssueGoal = (goal: string) => {
+    setUserProfile(prev => ({
+      ...prev,
+      weeklyGoalSetAt: new Date().toISOString(),
+      activeGoal: goal,
+      hasCaptainTickedGoal: false,
+      hasAssistantTickedGoal: false
+    }));
+    triggerConfetti();
+    alert(`Weekly Goal Issued! 🏆 Team mission: "${goal}"`);
+  };
+
+  const handleTickGoal = (role: 'captain' | 'assistant') => {
+    setUserProfile(prev => {
+      const newState = { ...prev };
+      if (role === 'captain') newState.hasCaptainTickedGoal = true;
+      if (role === 'assistant') newState.hasAssistantTickedGoal = true;
+
+      // Both Captain and Assistant Captain must tick off the mission
+      if (newState.hasCaptainTickedGoal && newState.hasAssistantTickedGoal) {
+        newState.goldenShamrocks += 1000;
+        newState.activeGoal = undefined;
+        newState.hasCaptainTickedGoal = false;
+        newState.hasAssistantTickedGoal = false;
+        triggerConfetti();
+        alert(`Mission Complete! Both Captain and Assistant Captain have verified the cleanup. +1,000 Golden Shamrocks awarded to the neighborhood! 🏆✨`);
+      }
+      return newState;
+    });
   };
 
   const handlePurchase = (item: ShopItem) => {
@@ -207,17 +261,35 @@ const App: React.FC = () => {
             <div className="flex items-center gap-3">
               <span className="bg-black/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest text-white/80 backdrop-blur-sm border border-white/10">Environmental Initiative</span>
               {userProfile.neighborhood && <span className="text-white/70 text-sm font-medium">Active in {userProfile.neighborhood}</span>}
+              {(userProfile.isCaptain || userProfile.isAssistantCaptain) && (
+                <span className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest border border-white/20 animate-pulse">
+                  👑 {userProfile.isMaster ? 'Shamrock Master' : userProfile.isCaptain ? 'Chat Captain' : 'Assistant Captain'}
+                </span>
+              )}
             </div>
           </div>
           
-          <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-md border border-white/10 flex items-center gap-5 shadow-inner">
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] uppercase font-bold text-white/60 tracking-[0.2em] mb-1">Available Rewards</span>
-              <div className="flex items-center gap-2 text-3xl font-black">
-                <span className="text-emerald-400">☘️</span> {userProfile.totalShamrocks.toLocaleString()}
+          <div className="flex gap-4">
+            <div className="bg-white/10 p-4 rounded-3xl backdrop-blur-md border border-white/10 flex items-center gap-5 shadow-inner">
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] uppercase font-bold text-white/60 tracking-[0.2em] mb-1">Shamrocks</span>
+                <div className="flex items-center gap-2 text-3xl font-black">
+                  <span className="text-emerald-400">☘️</span> {userProfile.totalShamrocks.toLocaleString()}
+                </div>
               </div>
+              <Avatar icon={userProfile.avatar} rank={userProfile.rank} isCaptain={userProfile.isCaptain} isAssistantCaptain={userProfile.isAssistantCaptain} size="md" className="bg-white" />
             </div>
-            <Avatar icon={userProfile.avatar} rank={userProfile.rank} size="md" className="bg-white" />
+
+            {(userProfile.isMaster || userProfile.goldenShamrocks > 0) && (
+              <div className="bg-yellow-400/20 p-4 rounded-3xl backdrop-blur-md border border-yellow-400/30 flex items-center gap-5 shadow-inner">
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] uppercase font-bold text-yellow-400 tracking-[0.2em] mb-1">Golden</span>
+                  <div className="flex items-center gap-2 text-3xl font-black text-yellow-400">
+                    <span className="animate-spin-slow">✨</span> {userProfile.goldenShamrocks.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -239,7 +311,25 @@ const App: React.FC = () => {
           <>
             {activeView === 'home' && (
               <div className="space-y-10">
-                {/* How It Works Section */}
+                {userProfile.activeGoal && (
+                  <div className="bg-amber-50 border-4 border-amber-400 p-6 rounded-[2.5rem] shadow-lg animate-in zoom-in duration-500 flex items-center justify-between gap-6">
+                    <div className="flex items-center gap-6">
+                      <div className="text-5xl">👑</div>
+                      <div>
+                        <h4 className="text-amber-900 font-black uppercase tracking-widest text-sm mb-1">Active Team Goal</h4>
+                        <p className="text-amber-800 text-xl font-bold italic">"{userProfile.activeGoal}"</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="flex gap-2">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${userProfile.hasCaptainTickedGoal ? 'bg-emerald-500 text-white' : 'bg-amber-200 text-amber-700'}`}>Capt. {userProfile.hasCaptainTickedGoal ? '✓' : '...'}</span>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${userProfile.hasAssistantTickedGoal ? 'bg-emerald-500 text-white' : 'bg-amber-200 text-amber-700'}`}>Asst. {userProfile.hasAssistantTickedGoal ? '✓' : '...'}</span>
+                      </div>
+                      <div className="bg-amber-400 text-amber-900 px-6 py-2 rounded-2xl font-black text-sm uppercase text-center">Verification Pending</div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-white rounded-[3rem] p-8 md:p-12 shadow-xl border-b-8 border-emerald-600 animate-in fade-in slide-in-from-top duration-700">
                   <div className="flex items-center gap-4 mb-8">
                     <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-2xl">ℹ️</div>
@@ -260,7 +350,7 @@ const App: React.FC = () => {
                     <div className="flex flex-col items-center text-center group">
                       <div className="w-16 h-16 bg-emerald-50 rounded-[1.5rem] flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform shadow-sm">📸</div>
                       <h3 className="font-black text-emerald-900 mb-1">3. Verify</h3>
-                      <p className="text-xs text-gray-500 font-medium">Use photo or ask a neighbor that's in your chat to witness.</p>
+                      <p className="text-xs text-gray-500 font-medium">Use photo or ask a neighbor in chat to witness.</p>
                     </div>
                     <div className="flex flex-col items-center text-center group">
                       <div className="w-16 h-16 bg-emerald-50 rounded-[1.5rem] flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform shadow-sm">🎁</div>
@@ -277,12 +367,6 @@ const App: React.FC = () => {
                         <ActionCard key={action.id} action={action} onSelect={setSelectedAction} />
                       ))}
                     </div>
-                    <div className="bg-white p-10 rounded-[3rem] border-l-8 shadow-xl" style={{ borderColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.bg || COLORS.emeraldDeep }}>
-                      <h3 className="text-2xl font-black text-emerald-900 mb-2">Our Mission</h3>
-                      <p className="text-gray-600 leading-relaxed italic">
-                        "Help Ireland connects local communities with simple, impactful environmental actions. By working together at a neighborhood level, we can protect our heritage and landscape for generations to come."
-                      </p>
-                    </div>
                   </div>
                   <div className="space-y-10">
                     <Leaderboard 
@@ -291,28 +375,35 @@ const App: React.FC = () => {
                       currentUserCounty={userProfile.county}
                       onViewUser={handleViewUser} 
                     />
-                    <div className="bg-emerald-900 p-8 rounded-[3rem] text-white relative overflow-hidden group shadow-2xl" 
-                      style={{ backgroundColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.accent || COLORS.emeraldMid }}>
-                      <div className="relative z-10">
-                        <h4 className="text-2xl font-black mb-2">Badge System</h4>
-                        <p className="text-white/70 text-sm mb-6">Earn exclusive honors for your commitment to the environment.</p>
-                        <button 
-                          onClick={() => setActiveView('profile')}
-                          className="w-full py-4 bg-white text-emerald-900 font-bold rounded-2xl hover:bg-emerald-50 transition-colors shadow-lg"
-                        >
-                          View My Badges
-                        </button>
-                      </div>
-                      <span className="absolute -bottom-6 -right-6 text-9xl opacity-10 group-hover:scale-125 transition-transform duration-700">🏅</span>
-                    </div>
+                    <button 
+                      onClick={() => setActiveView('chat-leaderboard')}
+                      className="w-full bg-emerald-900 p-8 rounded-[3rem] text-white relative overflow-hidden group shadow-2xl flex flex-col text-left transition-all hover:scale-[1.02]"
+                      style={{ backgroundColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.accent || COLORS.emeraldMid }}
+                    >
+                      <h4 className="text-2xl font-black mb-2">Chat Leaderboard</h4>
+                      <p className="text-white/70 text-sm mb-6">See which neighborhood is making the biggest splash in Ireland.</p>
+                      <span className="mt-auto px-6 py-2 bg-white text-emerald-900 font-bold rounded-xl text-center">View Global Rankings</span>
+                      <span className="absolute -bottom-6 -right-6 text-9xl opacity-10 group-hover:scale-125 transition-transform duration-700">🏆</span>
+                    </button>
                   </div>
                 </div>
               </div>
             )}
 
             {activeView === 'chat' && (
-              <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom duration-500">
-                <NeighborhoodChat user={userProfile} onViewUser={handleViewUser} />
+              <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom duration-500">
+                <NeighborhoodChat 
+                  user={userProfile} 
+                  onViewUser={handleViewUser} 
+                  onGoalAward={handleIssueGoal}
+                  onTickGoal={handleTickGoal}
+                />
+              </div>
+            )}
+
+            {activeView === 'chat-leaderboard' && (
+              <div className="animate-in fade-in slide-in-from-bottom duration-500">
+                <ChatLeaderboard onBack={() => setActiveView('home')} />
               </div>
             )}
 
@@ -405,7 +496,7 @@ const App: React.FC = () => {
               animation: `confetti ${2 + Math.random() * 3}s linear infinite`,
               animationDelay: `${Math.random() * 2}s`
             }}>
-              {['☘️', '🌿', '✨', '💎', '🏅'][Math.floor(Math.random() * 5)]}
+              {['☘️', '🌿', '✨', '💎', '🏅', '👑'][Math.floor(Math.random() * 6)]}
             </div>
           ))}
         </div>

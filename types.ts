@@ -35,15 +35,23 @@ export interface UserProfile {
   communityGroups: string[];
   bio: string;
   avatar: string;
-  activeTheme?: string; // ID of the purchased theme
+  activeTheme?: string; 
   totalShamrocks: number;
+  goldenShamrocks: number; 
+  isMaster: boolean; 
+  isCaptain: boolean; 
+  isAssistantCaptain: boolean; // New: 2nd person to join
+  weeklyGoalSetAt?: string; 
+  activeGoal?: string; 
+  hasCaptainTickedGoal?: boolean; // Progress tracking
+  hasAssistantTickedGoal?: boolean; // Progress tracking
   completedActions: number;
-  completedActionTypes: ActionType[]; // Track unique types completed
+  completedActionTypes: ActionType[]; 
   joinedDate: string;
-  badges: string[]; // IDs of earned badges
+  badges: string[]; 
   unlockedAvatars: string[];
   unlockedThemes: string[];
-  rank?: number; // 1, 2, or 3
+  rank?: number; 
 }
 
 export interface ChatMessage {
@@ -55,6 +63,9 @@ export interface ChatMessage {
   timestamp: string;
   roomType: 'neighborhood' | 'street' | 'group';
   roomName: string;
+  isGoal?: boolean; 
+  isCaptain?: boolean; 
+  isAssistantCaptain?: boolean; // New: Highlight Assistant Captain
   attachment?: {
     type: 'image' | 'video';
     url: string;
@@ -73,6 +84,15 @@ export interface LeaderboardEntry {
   county: string;
   isCurrentUser?: boolean;
   avatar?: string;
+  isMaster?: boolean;
+}
+
+export interface ChatLeaderboardEntry {
+  neighborhood: string;
+  county: string;
+  totalPoints: number;
+  activeMembers: number;
+  rank: number;
 }
 
 export interface ShopItem {
@@ -89,4 +109,4 @@ export interface ShopItem {
   };
 }
 
-export type AppView = 'home' | 'profile' | 'chat' | 'user-view' | 'games' | 'about';
+export type AppView = 'home' | 'profile' | 'chat' | 'user-view' | 'games' | 'about' | 'chat-leaderboard';

@@ -1,5 +1,5 @@
 
-import { ActionType, RewardAction, UserProfile, LeaderboardEntry, Badge, ShopItem } from './types';
+import { ActionType, RewardAction, UserProfile, LeaderboardEntry, Badge, ShopItem, ChatLeaderboardEntry } from './types';
 
 export const COLORS = {
   emeraldDeep: '#004d2c',
@@ -99,17 +99,41 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'av_rank2', name: '2nd Place Ribbon Avatar', icon: '🎗️🥈', cost: 0, type: 'avatar', earnedOnly: true },
   { id: 'av_rank3', name: '3rd Place Ribbon Avatar', icon: '🎗️🥉', cost: 0, type: 'avatar', earnedOnly: true },
   
+  // Poop & Nature Avatars (New Additions)
+  { id: 'av_poop', name: 'Lucky Fertilizer', icon: '💩', cost: 100, type: 'avatar' },
+  { id: 'av_flower_w', name: 'Wilted Flower', icon: '🥀', cost: 150, type: 'avatar' },
+  { id: 'av_leaf_f', name: 'Fallen Leaf', icon: '🍂', cost: 200, type: 'avatar' },
+  { id: 'av_leaf_m', name: 'Maple Leaf', icon: '🍁', cost: 250, type: 'avatar' },
+  { id: 'av_mushroom', name: 'Wild Mushroom', icon: '🍄', cost: 300, type: 'avatar' },
+  { id: 'av_cactus', name: 'Wild Cactus', icon: '🌵', cost: 350, type: 'avatar' },
+  { id: 'av_palm', name: 'Island Palm', icon: '🌴', cost: 400, type: 'avatar' },
+  { id: 'av_evergreen', name: 'Evergreen Pine', icon: '🌲', cost: 450, type: 'avatar' },
+  { id: 'av_deciduous', name: 'Ancient Oak', icon: '🌳', cost: 500, type: 'avatar' },
+  { id: 'av_bamboo', name: 'Lucky Bamboo', icon: '🎋', cost: 550, type: 'avatar' },
+  { id: 'av_potted', name: 'Potted Ivy', icon: '🪴', cost: 600, type: 'avatar' },
+  { id: 'av_shell', name: 'Coastal Shell', icon: '🐚', cost: 650, type: 'avatar' },
+  { id: 'av_coral', name: 'Irish Coral', icon: '🪸', cost: 700, type: 'avatar' },
+  { id: 'av_rock', name: 'Stone Circle Rock', icon: '🪨', cost: 750, type: 'avatar' },
+  { id: 'av_mountain', name: 'Slieve Donard', icon: '🏔️', cost: 800, type: 'avatar' },
+  { id: 'av_wave', name: 'Atlantic Wave', icon: '🌊', cost: 850, type: 'avatar' },
+  { id: 'av_volcano', name: 'Dormant Volcano', icon: '🌋', cost: 900, type: 'avatar' },
+  { id: 'av_sun', name: 'Rare Irish Sun', icon: '☀️', cost: 1000, type: 'avatar' },
+  { id: 'av_rainbow', name: 'Bog Rainbow', icon: '🌈', cost: 1200, type: 'avatar' },
+  { id: 'av_storm', name: 'Atlantic Gale', icon: '⛈️', cost: 1300, type: 'avatar' },
+  { id: 'av_snowflake', name: 'Winter Frost', icon: '❄️', cost: 1400, type: 'avatar' },
+  { id: 'av_fire', name: 'Solstice Fire', icon: '🔥', cost: 1500, type: 'avatar' },
+
   // Tier 1: Common Avatars (300 - 600)
-  { id: 'av_oak', name: 'Oak Leaf', icon: '🍃', cost: 300, type: 'avatar' },
-  { id: 'av_flower', name: 'Primrose', icon: '🌼', cost: 400, type: 'avatar' },
-  { id: 'av1', name: 'Red Fox', icon: '🦊', cost: 500, type: 'avatar' },
+  { id: 'av_oak_leaf', name: 'Oak Leaf', icon: '🍃', cost: 300, type: 'avatar' },
+  { id: 'av_primrose', name: 'Primrose', icon: '🌼', cost: 400, type: 'avatar' },
+  { id: 'av_fox', name: 'Red Fox', icon: '🦊', cost: 500, type: 'avatar' },
   { id: 'av_squirrel', name: 'Red Squirrel', icon: '🐿️', cost: 600, type: 'avatar' },
   
   // Tier 2: Uncommon Avatars (750 - 1500)
-  { id: 'av3', name: 'Irish Hare', icon: '🐇', cost: 750, type: 'avatar' },
+  { id: 'av_hare', name: 'Irish Hare', icon: '🐇', cost: 750, type: 'avatar' },
   { id: 'av_puffin', name: 'Atlantic Puffin', icon: '🐧', cost: 850, type: 'avatar' },
   { id: 'av_otter', name: 'River Otter', icon: '🦦', cost: 950, type: 'avatar' },
-  { id: 'av2', name: 'Golden Eagle', icon: '🦅', cost: 1200, type: 'avatar' },
+  { id: 'av_eagle', name: 'Golden Eagle', icon: '🦅', cost: 1200, type: 'avatar' },
   { id: 'av_seal', name: 'Grey Seal', icon: '🦭', cost: 1500, type: 'avatar' },
 
   // Tier 3: Legendary Mythological Avatars (5000 - 25000)
@@ -274,11 +298,15 @@ export const MOCK_USERS: UserProfile[] = [
     communityGroups: ['The Liberties GAA'],
     bio: 'Dedicated to urban greening projects.',
     avatar: '👤',
-    totalShamrocks: 0, // Reset to zero
+    totalShamrocks: 0, 
+    goldenShamrocks: 0,
+    isMaster: false,
+    isCaptain: false,
+    isAssistantCaptain: false,
     completedActions: 0,
     completedActionTypes: [],
     joinedDate: '2023-05-12T10:00:00.000Z',
-    badges: [], // Reset to none
+    badges: [], 
     unlockedAvatars: ['👤'],
     unlockedThemes: ['th_default'],
     rank: 0
@@ -292,11 +320,15 @@ export const MOCK_USERS: UserProfile[] = [
     communityGroups: ['St. Catherine’s Parish'],
     bio: 'Preserving our natural heritage for future generations.',
     avatar: '👤',
-    totalShamrocks: 0, // Reset to zero
+    totalShamrocks: 0, 
+    goldenShamrocks: 0,
+    isMaster: false,
+    isCaptain: false,
+    isAssistantCaptain: false,
     completedActions: 0,
     completedActionTypes: [],
     joinedDate: '2023-08-20T10:00:00.000Z',
-    badges: [], // Reset to none
+    badges: [], 
     unlockedAvatars: ['👤'],
     unlockedThemes: ['th_default'],
     rank: 0
@@ -310,4 +342,17 @@ export const MOCK_LEADERBOARD: LeaderboardEntry[] = [
   { id: '4', name: 'Aoife Kelly', points: 0, county: 'Cork', avatar: '👤' },
   { id: '5', name: 'Liam Byrne', points: 0, county: 'Dublin', avatar: '👤' },
   { id: '6', name: 'Eoin Gallagher', points: 0, county: 'Galway', avatar: '👤' }
+];
+
+export const MOCK_CHAT_LEADERBOARD: ChatLeaderboardEntry[] = [
+  { neighborhood: 'The Liberties, Dublin', county: 'Dublin', totalPoints: 125400, activeMembers: 142, rank: 1 },
+  { neighborhood: 'Galway City Centre', county: 'Galway', totalPoints: 110200, activeMembers: 98, rank: 2 },
+  { neighborhood: 'The Marina, Cork', county: 'Cork', totalPoints: 95000, activeMembers: 76, rank: 3 },
+  { neighborhood: 'Dalkey, Dublin', county: 'Dublin', totalPoints: 88200, activeMembers: 64, rank: 4 },
+  { neighborhood: 'Killarney Town', county: 'Kerry', totalPoints: 82300, activeMembers: 54, rank: 5 },
+  { neighborhood: 'Letterkenny, Donegal', county: 'Donegal', totalPoints: 71000, activeMembers: 42, rank: 6 },
+  { neighborhood: 'Westport, Mayo', county: 'Mayo', totalPoints: 65400, activeMembers: 39, rank: 7 },
+  { neighborhood: 'Limerick Medieval Quarter', county: 'Limerick', totalPoints: 59000, activeMembers: 31, rank: 8 },
+  { neighborhood: 'Kilkenny City Centre', county: 'Kilkenny', totalPoints: 52100, activeMembers: 28, rank: 9 },
+  { neighborhood: 'Salthill, Galway', county: 'Galway', totalPoints: 48900, activeMembers: 25, rank: 10 }
 ];

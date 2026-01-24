@@ -50,6 +50,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdate, onPurc
   const userBadges = useMemo(() => BADGES.filter(b => user.badges.includes(b.id)), [user.badges]);
   const filteredShopItems = SHOP_ITEMS.filter(item => item.type === shopCategory);
 
+  const unlockedThemesData = useMemo(() => {
+    return SHOP_ITEMS.filter(item => item.type === 'theme' && user.unlockedThemes.includes(item.id));
+  }, [user.unlockedThemes]);
+
   // Combine unlocked shop avatars and earned badge icons into a unique set
   const availableAvatarIcons = useMemo(() => {
     const icons = new Set(user.unlockedAvatars);
@@ -159,7 +163,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdate, onPurc
       <div className="bg-white rounded-3xl shadow-xl overflow-hidden transition-all duration-500">
         <div className="h-40 relative transition-colors duration-500" style={{ backgroundColor: activeTheme.themeConfig?.bg }}>
           <div className="absolute -bottom-16 left-12 bg-white p-2 rounded-[2rem] shadow-2xl">
-            <Avatar icon={user.avatar} rank={user.rank} size="xl" className="border-4 border-emerald-100" />
+            <Avatar icon={user.avatar} rank={user.rank} size="xl" isMaster={user.isMaster} isCaptain={user.isCaptain} className="border-4 border-emerald-100" />
           </div>
           <div className="absolute top-4 right-8 flex gap-3">
             <button 
@@ -229,7 +233,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdate, onPurc
           <div className="mt-10">
             <h3 className="text-sm font-bold text-emerald-900 uppercase tracking-widest mb-4 flex items-center gap-2">
               <span className="w-6 h-px bg-emerald-200"></span>
-              My Avatars & Badge Icons
+              My Avatars
               <span className="w-6 h-px bg-emerald-200"></span>
             </h3>
             <div className="flex flex-wrap gap-3">
@@ -242,6 +246,30 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdate, onPurc
                   }`}
                 >
                   {av}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-10">
+            <h3 className="text-sm font-bold text-emerald-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <span className="w-6 h-px bg-emerald-200"></span>
+              My Themes
+              <span className="w-6 h-px bg-emerald-200"></span>
+            </h3>
+            <div className="flex flex-wrap gap-4">
+              {unlockedThemesData.map(theme => (
+                <button
+                  key={theme.id}
+                  onClick={() => onUpdate({ activeTheme: theme.id })}
+                  className={`flex items-center gap-3 px-4 py-2 rounded-2xl border-4 transition-all ${
+                    user.activeTheme === theme.id ? 'border-emerald-500 bg-emerald-50 shadow-md scale-105' : 'border-gray-100 bg-gray-50 hover:border-emerald-200'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-sm" style={{ backgroundColor: theme.themeConfig?.bg }}>
+                    {theme.icon}
+                  </div>
+                  <span className="text-xs font-bold text-emerald-900">{theme.name}</span>
                 </button>
               ))}
             </div>
@@ -292,11 +320,20 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdate, onPurc
               
               const isOwned = isOwnedAvatar || isOwnedTheme || isOwnedAchievement;
               const canAfford = user.totalShamrocks >= item.cost;
-              const isSelected = item.id === user.activeTheme;
+              const isSelected = (item.type === 'theme' && item.id === user.activeTheme) || (item.type === 'avatar' && item.icon === user.avatar);
               
+              const handleAction = () => {
+                if (isOwned) {
+                  if (item.type === 'theme') onUpdate({ activeTheme: item.id });
+                  if (item.type === 'avatar') onUpdate({ avatar: item.icon });
+                } else if (canAfford) {
+                  onPurchase(item);
+                }
+              };
+
               return (
                 <div key={item.id} className={`bg-black/10 border-2 p-6 rounded-[2.5rem] flex items-center justify-between group transition-all ${
-                  isOwned ? 'border-white/20 grayscale-[0.2]' : canAfford ? 'border-white/10 hover:border-white/30 hover:bg-black/20' : 'border-black/20 opacity-40'
+                  isOwned ? 'border-white/20' : canAfford ? 'border-white/10 hover:border-white/30 hover:bg-black/20' : 'border-black/20 opacity-40'
                 }`}>
                   <div className="flex items-center gap-4">
                     <div className={`text-4xl w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all shadow-inner ${
@@ -310,22 +347,22 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdate, onPurc
                     </div>
                   </div>
                   
-                  {item.earnedOnly ? (
-                    <div className={`px-4 py-1 rounded-full font-bold text-[10px] uppercase tracking-tighter ${isOwned ? 'bg-emerald-500 text-white' : 'bg-black/40 text-white/40'}`}>
-                      {isOwned ? 'Unlocked' : 'Rank Locked'}
+                  {item.earnedOnly && !isOwned ? (
+                    <div className="px-4 py-1 rounded-full font-bold text-[10px] uppercase tracking-tighter bg-black/40 text-white/40">
+                      Rank Locked
                     </div>
                   ) : (
                     <button
-                      disabled={isOwned || !canAfford}
-                      onClick={() => onPurchase(item)}
+                      disabled={!isOwned && !canAfford}
+                      onClick={handleAction}
                       className={`px-4 py-2 rounded-xl font-bold text-xs transition-all whitespace-nowrap ${
-                        isSelected ? 'bg-white text-black cursor-default' :
-                        isOwned ? 'bg-black/40 text-white/60 cursor-default' :
+                        isSelected ? 'bg-white text-emerald-900 shadow-xl scale-105' :
+                        isOwned ? 'bg-emerald-600 text-white hover:bg-emerald-500' :
                         !canAfford ? 'bg-black/40 text-white/20 cursor-not-allowed border border-white/5' :
                         'bg-white text-emerald-900 hover:bg-emerald-50 shadow-lg active:scale-95'
                       }`}
                     >
-                      {isSelected ? 'Active' : isOwned ? 'Owned' : `☘️ ${item.cost.toLocaleString()}`}
+                      {isSelected ? 'Selected' : isOwned ? 'Use Item' : `☘️ ${item.cost.toLocaleString()}`}
                     </button>
                   )}
                 </div>
