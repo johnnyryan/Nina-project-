@@ -6,17 +6,18 @@ import { Avatar } from './Avatar';
 interface LeaderboardProps {
   entries: LeaderboardEntry[];
   currentUserPoints: number;
+  currentUserCounty: string;
   onViewUser: (userId: string) => void;
 }
 
-export const Leaderboard: React.FC<LeaderboardProps> = ({ entries, currentUserPoints, onViewUser }) => {
-  const sortedEntries = [...entries, { id: 'me', name: 'You', points: currentUserPoints, isCurrentUser: true, avatar: '👤' }]
+export const Leaderboard: React.FC<LeaderboardProps> = ({ entries, currentUserPoints, currentUserCounty, onViewUser }) => {
+  const sortedEntries = [...entries, { id: 'me', name: 'You', points: currentUserPoints, county: currentUserCounty, isCurrentUser: true, avatar: '👤' }]
     .sort((a, b) => b.points - a.points);
 
   return (
     <div className="bg-white rounded-3xl p-6 shadow-lg border-t-8 border-emerald-600">
       <h2 className="text-2xl font-bold text-emerald-900 mb-6 flex items-center gap-2">
-        🏆 Neighborhood Heroes
+        🏆 {currentUserCounty || 'Local'} Heroes
       </h2>
       <div className="space-y-4">
         {sortedEntries.map((entry, index) => {
@@ -54,6 +55,11 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ entries, currentUserPo
             </button>
           );
         })}
+        {sortedEntries.length === 1 && (
+          <p className="text-xs text-center text-gray-400 italic py-4">
+            Be the first to climb the {currentUserCounty} ranks!
+          </p>
+        )}
       </div>
     </div>
   );

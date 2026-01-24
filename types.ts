@@ -2,6 +2,7 @@
 export enum ActionType {
   PICK_UP_RUBBISH = 'PICK_UP_RUBBISH',
   PLANT_A_TREE = 'PLANT_A_TREE',
+  PLANT_A_GARDEN = 'PLANT_A_GARDEN',
   RECYCLE = 'RECYCLE',
   HELP_ANIMALS = 'HELP_ANIMALS',
   DONATE_VOLUNTEER = 'DONATE_VOLUNTEER',
@@ -28,16 +29,20 @@ export interface Badge {
 export interface UserProfile {
   id: string;
   name: string;
+  county: string;
   neighborhood: string;
-  street?: string;
+  street: string;
   communityGroups: string[];
   bio: string;
   avatar: string;
+  activeTheme?: string; // ID of the purchased theme
   totalShamrocks: number;
   completedActions: number;
+  completedActionTypes: ActionType[]; // Track unique types completed
   joinedDate: string;
   badges: string[]; // IDs of earned badges
   unlockedAvatars: string[];
+  unlockedThemes: string[];
   rank?: number; // 1, 2, or 3
 }
 
@@ -65,6 +70,7 @@ export interface LeaderboardEntry {
   id: string;
   name: string;
   points: number;
+  county: string;
   isCurrentUser?: boolean;
   avatar?: string;
 }
@@ -76,6 +82,11 @@ export interface ShopItem {
   cost: number;
   type: 'avatar' | 'theme' | 'achievement';
   earnedOnly?: boolean;
+  themeConfig?: {
+    bg: string;
+    accent: string;
+    pattern?: string;
+  };
 }
 
 export type AppView = 'home' | 'profile' | 'chat' | 'user-view' | 'games';

@@ -6,7 +6,7 @@ import { verifyActionImage } from '../services/geminiService';
 interface VerificationModalProps {
   action: RewardAction;
   onClose: () => void;
-  onSuccess: (points: number) => void;
+  onSuccess: (points: number, actionId: ActionType) => void;
 }
 
 export const VerificationModal: React.FC<VerificationModalProps> = ({ action, onClose, onSuccess }) => {
@@ -40,18 +40,18 @@ export const VerificationModal: React.FC<VerificationModalProps> = ({ action, on
         if (action.id === ActionType.DONATE_VOLUNTEER) {
           points = Math.max(1, parseInt(amount) || 1);
         }
-        setTimeout(() => onSuccess(points), 3000);
+        setTimeout(() => onSuccess(points, action.id), 3000);
       }
     } else if (method === 'friend') {
       setIsVerifying(true);
       setTimeout(() => {
         setIsVerifying(false);
-        setFeedback("To the moon and back! Your friend says you're a proper legend. Verification complete!");
+        setFeedback("Proper legend! Your witness has confirmed your action. Verification complete!");
         let points = action.points;
         if (action.id === ActionType.DONATE_VOLUNTEER) {
           points = Math.max(1, parseInt(amount) || 1);
         }
-        setTimeout(() => onSuccess(points), 3000);
+        setTimeout(() => onSuccess(points, action.id), 3000);
       }, 1500);
     }
   };
@@ -74,8 +74,8 @@ export const VerificationModal: React.FC<VerificationModalProps> = ({ action, on
                 className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-gray-100 hover:border-emerald-500 hover:bg-emerald-50 transition-all text-left group"
               >
                 <div>
-                  <div className="font-bold text-emerald-900">Take a Photo</div>
-                  <div className="text-xs text-gray-500">AI Warden checks your work</div>
+                  <div className="font-bold text-emerald-900">Use photo</div>
+                  <div className="text-xs text-gray-500">Upload a picture of your progress</div>
                 </div>
                 <span className="text-2xl group-hover:scale-125 transition-transform">📸</span>
               </button>
@@ -84,10 +84,10 @@ export const VerificationModal: React.FC<VerificationModalProps> = ({ action, on
                 className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-gray-100 hover:border-emerald-500 hover:bg-emerald-50 transition-all text-left group"
               >
                 <div>
-                  <div className="font-bold text-emerald-900">Friend Verification</div>
-                  <div className="text-xs text-gray-500">Have a witness confirm it</div>
+                  <div className="font-bold text-emerald-900">Check / Ask a neighbour</div>
+                  <div className="text-xs text-gray-500">Ask a neighbour in your chat to witness</div>
                 </div>
-                <span className="text-2xl group-hover:scale-125 transition-transform">🍻</span>
+                <span className="text-2xl group-hover:scale-125 transition-transform">🤝</span>
               </button>
               <button onClick={onClose} className="w-full py-2 text-gray-400 hover:text-gray-600 text-sm">Cancel</button>
             </div>
@@ -147,9 +147,10 @@ export const VerificationModal: React.FC<VerificationModalProps> = ({ action, on
               )}
 
               {method === 'friend' && (
-                <div className="text-center p-6 bg-orange-50 rounded-2xl border-2 border-orange-100">
-                  <p className="text-orange-800">
-                    Show this to your friend! They are verifying that you completed this action today.
+                <div className="text-center p-6 bg-emerald-50 rounded-2xl border-2 border-emerald-100">
+                  <p className="text-emerald-800 font-bold mb-2">Community Witness Needed!</p>
+                  <p className="text-emerald-700 text-sm">
+                    Show this screen to a neighbor in your chat or community group to verify you completed: <span className="font-bold">{action.title}</span>.
                   </p>
                 </div>
               )}
