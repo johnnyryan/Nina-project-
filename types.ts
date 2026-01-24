@@ -4,7 +4,8 @@ export enum ActionType {
   PLANT_A_TREE = 'PLANT_A_TREE',
   RECYCLE = 'RECYCLE',
   HELP_ANIMALS = 'HELP_ANIMALS',
-  DONATE_VOLUNTEER = 'DONATE_VOLUNTEER'
+  DONATE_VOLUNTEER = 'DONATE_VOLUNTEER',
+  SAVE_WATER = 'SAVE_WATER'
 }
 
 export interface RewardAction {
@@ -28,6 +29,8 @@ export interface UserProfile {
   id: string;
   name: string;
   neighborhood: string;
+  street?: string;
+  communityGroups: string[];
   bio: string;
   avatar: string;
   totalShamrocks: number;
@@ -42,9 +45,15 @@ export interface ChatMessage {
   id: string;
   userId: string;
   userName: string;
+  userAvatar: string;
   text: string;
   timestamp: string;
-  neighborhood: string;
+  roomType: 'neighborhood' | 'street' | 'group';
+  roomName: string;
+  attachment?: {
+    type: 'image' | 'video';
+    url: string;
+  };
 }
 
 export interface GeminiVerificationResponse {
@@ -69,4 +78,4 @@ export interface ShopItem {
   earnedOnly?: boolean;
 }
 
-export type AppView = 'home' | 'profile' | 'chat' | 'user-view';
+export type AppView = 'home' | 'profile' | 'chat' | 'user-view' | 'games';

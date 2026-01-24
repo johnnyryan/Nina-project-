@@ -9,14 +9,17 @@ import { ProfilePage } from './components/ProfilePage';
 import { NeighborhoodChat } from './components/NeighborhoodChat';
 import { UserProfileView } from './components/UserProfileView';
 import { Avatar } from './components/Avatar';
+import { WildlifeGames } from './components/WildlifeGames';
 
 const App: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem('help-ireland-profile-v3');
+    const saved = localStorage.getItem('help-ireland-profile-v4');
     return saved ? JSON.parse(saved) : {
       id: 'me',
       name: '',
       neighborhood: '',
+      street: '',
+      communityGroups: [],
       bio: '',
       avatar: '👤',
       totalShamrocks: 100, // Starting bonus
@@ -52,7 +55,7 @@ const App: React.FC = () => {
       setUserProfile(prev => ({ ...prev, rank: myRank, badges: newBadges }));
     }
     
-    localStorage.setItem('help-ireland-profile-v3', JSON.stringify(userProfile));
+    localStorage.setItem('help-ireland-profile-v4', JSON.stringify(userProfile));
   }, [userProfile.totalShamrocks, userProfile.rank]);
 
   const handleActionComplete = (points: number) => {
@@ -62,6 +65,14 @@ const App: React.FC = () => {
       completedActions: prev.completedActions + 1
     }));
     setSelectedAction(null);
+    triggerConfetti();
+  };
+
+  const handleEarnPoints = (points: number) => {
+    setUserProfile(prev => ({
+      ...prev,
+      totalShamrocks: prev.totalShamrocks + points
+    }));
     triggerConfetti();
   };
 
@@ -102,7 +113,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-28 bg-[#f8fafc]">
+    <div className="min-h-screen pb-28">
       <header className="pt-10 pb-20 px-8 rounded-b-[4rem] shadow-2xl relative overflow-hidden text-white" style={{ backgroundColor: COLORS.emeraldDeep }}>
         <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none select-none">
           <span className="text-[200px]">☘️</span>
@@ -159,7 +170,7 @@ const App: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-10">
-                  <Leaderboard entries={MOCK_LEADERBOARD} currentUserPoints={userProfile.totalShamrocks} />
+                  <Leaderboard entries={MOCK_LEADERBOARD} currentUserPoints={userProfile.totalShamrocks} onViewUser={handleViewUser} />
                   <div className="bg-emerald-900 p-8 rounded-[3rem] text-white relative overflow-hidden group shadow-2xl">
                     <div className="relative z-10">
                       <h4 className="text-2xl font-black mb-2">Badge System</h4>
@@ -180,6 +191,12 @@ const App: React.FC = () => {
             {activeView === 'chat' && (
               <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom duration-500">
                 <NeighborhoodChat user={userProfile} onViewUser={handleViewUser} />
+              </div>
+            )}
+
+            {activeView === 'games' && (
+              <div className="animate-in fade-in slide-in-from-bottom duration-500">
+                <WildlifeGames onEarnPoints={handleEarnPoints} />
               </div>
             )}
 
@@ -210,24 +227,31 @@ const App: React.FC = () => {
         />
       )}
 
-      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl border border-emerald-100 flex items-center p-3 z-50 shadow-2xl rounded-[2.5rem] w-[90%] max-w-lg">
+      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl border border-emerald-100 flex items-center p-3 z-50 shadow-2xl rounded-[2.5rem] w-[95%] max-w-xl">
         <button 
           onClick={() => setActiveView('home')} 
-          className={`flex flex-col items-center flex-1 transition-all py-2 rounded-2xl ${activeView === 'home' ? 'bg-emerald-800 text-white' : 'text-gray-400 hover:text-emerald-600'}`}
+          className={`flex flex-col items-center flex-1 transition-all py-2 rounded-2xl ${activeView === 'home' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
         >
           <span className="text-2xl">🌍</span>
           <span className="text-[10px] font-bold uppercase mt-1">Actions</span>
         </button>
         <button 
           onClick={() => setActiveView('chat')} 
-          className={`flex flex-col items-center flex-1 transition-all py-2 rounded-2xl ${activeView === 'chat' ? 'bg-emerald-800 text-white' : 'text-gray-400 hover:text-emerald-600'}`}
+          className={`flex flex-col items-center flex-1 transition-all py-2 rounded-2xl ${activeView === 'chat' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
         >
           <span className="text-2xl">💬</span>
-          <span className="text-[10px] font-bold uppercase mt-1">Community</span>
+          <span className="text-[10px] font-bold uppercase mt-1">Chat</span>
+        </button>
+        <button 
+          onClick={() => setActiveView('games')} 
+          className={`flex flex-col items-center flex-1 transition-all py-2 rounded-2xl ${activeView === 'games' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
+        >
+          <span className="text-2xl">🦉</span>
+          <span className="text-[10px] font-bold uppercase mt-1">Games</span>
         </button>
         <button 
           onClick={() => setActiveView('profile')} 
-          className={`flex flex-col items-center flex-1 transition-all py-2 rounded-2xl ${activeView === 'profile' ? 'bg-emerald-800 text-white' : 'text-gray-400 hover:text-emerald-600'}`}
+          className={`flex flex-col items-center flex-1 transition-all py-2 rounded-2xl ${activeView === 'profile' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
         >
           <span className="text-2xl">👤</span>
           <span className="text-[10px] font-bold uppercase mt-1">Profile</span>

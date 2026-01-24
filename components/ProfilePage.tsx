@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { UserProfile, ShopItem } from '../types';
-import { NEIGHBORHOODS, BADGES, SHOP_ITEMS, COLORS } from '../constants';
+import { NEIGHBORHOODS, BADGES, SHOP_ITEMS, COLORS, COMMUNITY_GROUP_TYPES } from '../constants';
 import { Avatar } from './Avatar';
 
 interface ProfilePageProps {
@@ -16,6 +16,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdate, onPurc
   const [formData, setFormData] = useState({
     name: user.name || '',
     neighborhood: user.neighborhood || '',
+    street: user.street || '',
+    communityGroups: user.communityGroups || [],
     bio: user.bio || '',
     avatar: user.avatar || '👤'
   });
@@ -27,6 +29,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdate, onPurc
     }
     onUpdate(formData);
     setIsEditing(false);
+  };
+
+  const toggleGroup = (group: string) => {
+    const current = formData.communityGroups;
+    if (current.includes(group)) {
+      setFormData({...formData, communityGroups: current.filter(g => g !== group)});
+    } else {
+      setFormData({...formData, communityGroups: [...current, group]});
+    }
   };
 
   if (isEditing) {
@@ -49,16 +60,47 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdate, onPurc
             />
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Neighborhood</label>
+              <select
+                value={formData.neighborhood}
+                onChange={e => setFormData({...formData, neighborhood: e.target.value})}
+                className="w-full p-3 rounded-xl bg-gray-50 border-2 border-transparent focus:border-emerald-600 outline-none"
+              >
+                <option value="">Select area...</option>
+                {NEIGHBORHOODS.map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Street (Optional)</label>
+              <input
+                type="text"
+                value={formData.street}
+                onChange={e => setFormData({...formData, street: e.target.value})}
+                className="w-full p-3 rounded-xl bg-gray-50 border-2 border-transparent focus:border-emerald-600 outline-none"
+                placeholder="e.g. Francis St"
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Neighborhood</label>
-            <select
-              value={formData.neighborhood}
-              onChange={e => setFormData({...formData, neighborhood: e.target.value})}
-              className="w-full p-3 rounded-xl bg-gray-50 border-2 border-transparent focus:border-emerald-600 outline-none"
-            >
-              <option value="">Select your area...</option>
-              {NEIGHBORHOODS.map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Community Groups</label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {COMMUNITY_GROUP_TYPES.map(group => (
+                <button
+                  key={group}
+                  onClick={() => toggleGroup(group)}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-all border-2 ${
+                    formData.communityGroups.includes(group)
+                      ? 'bg-emerald-800 text-white border-emerald-800'
+                      : 'bg-white text-emerald-800 border-emerald-100 hover:border-emerald-600'
+                  }`}
+                >
+                  {group}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>
@@ -111,9 +153,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdate, onPurc
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 className="text-4xl font-black text-emerald-900">{user.name}</h2>
-              <p className="text-emerald-700 font-bold flex items-center gap-2 mt-1">
-                📍 {user.neighborhood}
-              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <span className="text-emerald-700 font-bold text-sm bg-emerald-50 px-3 py-1 rounded-full">📍 {user.neighborhood}</span>
+                {user.street && <span className="text-stone-600 font-bold text-sm bg-stone-100 px-3 py-1 rounded-full">🏠 {user.street}</span>}
+                {user.communityGroups.map(g => (
+                  <span key={g} className="text-orange-700 font-bold text-sm bg-orange-50 px-3 py-1 rounded-full">🤝 {g}</span>
+                ))}
+              </div>
             </div>
             <div className="bg-emerald-900 text-white px-6 py-2 rounded-2xl flex items-center gap-3 shadow-md">
               <span className="text-2xl">☘️</span>

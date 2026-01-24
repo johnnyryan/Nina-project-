@@ -20,6 +20,17 @@ export const NEIGHBORHOODS = [
   'Killarney Town'
 ];
 
+export const COMMUNITY_GROUP_TYPES = [
+  'GAA Club',
+  'Soccer Club',
+  'Rugby Club',
+  'Primary School',
+  'Secondary School',
+  'Parish Church',
+  'Tidy Towns',
+  'Community Centre'
+];
+
 export const BADGES: Badge[] = [
   { id: 'rank1', name: '1st Place Ribbon', icon: '🎗️🥇', description: 'Top contributor in your neighborhood.', isRank: true },
   { id: 'rank2', name: '2nd Place Ribbon', icon: '🎗️🥈', description: 'Second highest contributor.', isRank: true },
@@ -60,6 +71,13 @@ export const REWARD_ACTIONS: RewardAction[] = [
     icon: '🌳'
   },
   {
+    id: ActionType.SAVE_WATER,
+    title: 'Water Conservation',
+    description: 'Reduce water waste through conscious usage.',
+    points: 50,
+    icon: '💧'
+  },
+  {
     id: ActionType.RECYCLE,
     title: 'Proper Recycling',
     description: 'Sort household waste into the correct channels.',
@@ -88,6 +106,7 @@ export const MOCK_USERS: UserProfile[] = [
     id: '1',
     name: 'Patrick O’Malley',
     neighborhood: 'The Liberties, Dublin',
+    communityGroups: ['The Liberties GAA'],
     bio: 'Dedicated to urban greening projects.',
     avatar: '🦊',
     totalShamrocks: 15400,
@@ -101,6 +120,7 @@ export const MOCK_USERS: UserProfile[] = [
     id: '2',
     name: 'Siobhán Murphy',
     neighborhood: 'The Liberties, Dublin',
+    communityGroups: ['St. Catherine’s Parish'],
     bio: 'Preserving our natural heritage for future generations.',
     avatar: '🦅',
     totalShamrocks: 12100,

@@ -6,9 +6,10 @@ import { Avatar } from './Avatar';
 interface LeaderboardProps {
   entries: LeaderboardEntry[];
   currentUserPoints: number;
+  onViewUser: (userId: string) => void;
 }
 
-export const Leaderboard: React.FC<LeaderboardProps> = ({ entries, currentUserPoints }) => {
+export const Leaderboard: React.FC<LeaderboardProps> = ({ entries, currentUserPoints, onViewUser }) => {
   const sortedEntries = [...entries, { id: 'me', name: 'You', points: currentUserPoints, isCurrentUser: true, avatar: '👤' }]
     .sort((a, b) => b.points - a.points);
 
@@ -23,10 +24,14 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ entries, currentUserPo
           const displayRank = rank <= 3 ? rank : undefined;
 
           return (
-            <div
+            <button
               key={entry.id}
-              className={`flex items-center justify-between p-3 rounded-2xl transition-all ${
-                entry.isCurrentUser ? 'bg-emerald-50 border-2 border-emerald-500' : 'hover:bg-gray-50'
+              onClick={() => !entry.isCurrentUser && onViewUser(entry.id)}
+              disabled={entry.isCurrentUser}
+              className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all text-left ${
+                entry.isCurrentUser 
+                  ? 'bg-emerald-50 border-2 border-emerald-500 cursor-default' 
+                  : 'hover:bg-emerald-50 hover:shadow-sm cursor-pointer border-2 border-transparent'
               }`}
             >
               <div className="flex items-center gap-4">
@@ -46,7 +51,7 @@ export const Leaderboard: React.FC<LeaderboardProps> = ({ entries, currentUserPo
                 <span>☘️</span>
                 {entry.points.toLocaleString()}
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
