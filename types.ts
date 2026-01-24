@@ -89,4 +89,4 @@ export interface ShopItem {
   };
 }
 
-export type AppView = 'home' | 'profile' | 'chat' | 'user-view' | 'games';
+export type AppView = 'home' | 'profile' | 'chat' | 'user-view' | 'games' | 'about';

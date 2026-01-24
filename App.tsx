@@ -10,6 +10,7 @@ import { NeighborhoodChat } from './components/NeighborhoodChat';
 import { UserProfileView } from './components/UserProfileView';
 import { Avatar } from './components/Avatar';
 import { WildlifeGames } from './components/WildlifeGames';
+import { AboutPage } from './components/AboutPage';
 
 const App: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
@@ -202,11 +203,6 @@ const App: React.FC = () => {
         </div>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
           <div className="flex flex-col">
-            {userProfile.street && (
-              <div className="text-[10px] uppercase font-bold tracking-[0.3em] text-white/50 mb-2 animate-in fade-in duration-1000">
-                created by nina regan ryan
-              </div>
-            )}
             <h1 className="text-4xl md:text-6xl font-black mb-2 tracking-tighter text-white">Help Ireland</h1>
             <div className="flex items-center gap-3">
               <span className="bg-black/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest text-white/80 backdrop-blur-sm border border-white/10">Environmental Initiative</span>
@@ -333,6 +329,10 @@ const App: React.FC = () => {
                 onPurchase={handlePurchase}
               />
             )}
+
+            {activeView === 'about' && (
+              <AboutPage />
+            )}
           </>
         )}
       </main>
@@ -353,10 +353,10 @@ const App: React.FC = () => {
         />
       )}
 
-      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl border border-emerald-100 flex items-center p-3 z-50 shadow-2xl rounded-[2.5rem] w-[95%] max-w-xl">
+      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl border border-emerald-100 flex items-center p-3 z-50 shadow-2xl rounded-[2.5rem] w-[95%] max-w-2xl overflow-x-auto no-scrollbar">
         <button 
           onClick={() => setActiveView('home')} 
-          className={`flex flex-col items-center flex-1 transition-all py-2 rounded-2xl ${activeView === 'home' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
+          className={`flex flex-col items-center flex-1 transition-all py-2 px-1 rounded-2xl min-w-[70px] ${activeView === 'home' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
           style={activeView === 'home' ? { backgroundColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.accent || '' } : {}}
         >
           <span className="text-2xl">🌍</span>
@@ -364,7 +364,7 @@ const App: React.FC = () => {
         </button>
         <button 
           onClick={() => setActiveView('chat')} 
-          className={`flex flex-col items-center flex-1 transition-all py-2 rounded-2xl ${activeView === 'chat' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
+          className={`flex flex-col items-center flex-1 transition-all py-2 px-1 rounded-2xl min-w-[70px] ${activeView === 'chat' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
           style={activeView === 'chat' ? { backgroundColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.accent || '' } : {}}
         >
           <span className="text-2xl">💬</span>
@@ -372,15 +372,23 @@ const App: React.FC = () => {
         </button>
         <button 
           onClick={() => setActiveView('games')} 
-          className={`flex flex-col items-center flex-1 transition-all py-2 rounded-2xl ${activeView === 'games' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
+          className={`flex flex-col items-center flex-1 transition-all py-2 px-1 rounded-2xl min-w-[70px] ${activeView === 'games' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
           style={activeView === 'games' ? { backgroundColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.accent || '' } : {}}
         >
           <span className="text-2xl">🦉</span>
           <span className="text-[10px] font-bold uppercase mt-1">Games</span>
         </button>
         <button 
+          onClick={() => setActiveView('about')} 
+          className={`flex flex-col items-center flex-1 transition-all py-2 px-1 rounded-2xl min-w-[70px] ${activeView === 'about' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
+          style={activeView === 'about' ? { backgroundColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.accent || '' } : {}}
+        >
+          <span className="text-2xl">✨</span>
+          <span className="text-[10px] font-bold uppercase mt-1">About</span>
+        </button>
+        <button 
           onClick={() => setActiveView('profile')} 
-          className={`flex flex-col items-center flex-1 transition-all py-2 rounded-2xl ${activeView === 'profile' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
+          className={`flex flex-col items-center flex-1 transition-all py-2 px-1 rounded-2xl min-w-[70px] ${activeView === 'profile' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
           style={activeView === 'profile' ? { backgroundColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.accent || '' } : {}}
         >
           <span className="text-2xl">👤</span>
