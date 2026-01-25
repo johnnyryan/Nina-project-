@@ -6,13 +6,16 @@ import { Avatar } from './Avatar';
 
 interface UserProfileViewProps {
   user: UserProfile;
+  currentUserNeighborhood: string;
   onClose: () => void;
   onVerifyForUser: (userId: string, action: RewardAction) => void;
 }
 
-export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onClose, onVerifyForUser }) => {
+export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, currentUserNeighborhood, onClose, onVerifyForUser }) => {
   const [verifiedActions, setVerifiedActions] = useState<Set<string>>(new Set());
   const userBadges = BADGES.filter(b => user.badges.includes(b.id));
+
+  const isSameNeighborhood = user.neighborhood === currentUserNeighborhood;
 
   const handleToggleVerify = (action: RewardAction) => {
     if (verifiedActions.has(action.id)) return; // Don't verify twice in same session
@@ -68,56 +71,66 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ user, onClose,
             </div>
           </div>
 
-          <div className="bg-white rounded-[2.5rem] border-2 border-emerald-100 p-8 shadow-inner bg-gradient-to-b from-emerald-50/50 to-white">
-            <h3 className="font-black text-emerald-900 flex items-center gap-2 mb-2 text-xl">
-              🤝 Community Witness
-            </h3>
-            <p className="text-sm text-emerald-800/70 mb-6 font-medium leading-relaxed">
-              Help your neighbors grow their impact! Tick off any environmental actions you witnessed {user.name.split(' ')[0]} performing today.
-            </p>
-            
-            <div className="space-y-3">
-              {REWARD_ACTIONS.map(action => {
-                const isVerified = verifiedActions.has(action.id);
-                return (
-                  <button
-                    key={action.id}
-                    disabled={isVerified}
-                    onClick={() => handleToggleVerify(action)}
-                    className={`w-full p-5 rounded-2xl flex items-center justify-between transition-all group ${
-                      isVerified 
-                        ? 'bg-emerald-100 border-2 border-emerald-500 cursor-default opacity-80' 
-                        : 'bg-white border-2 border-gray-100 hover:border-emerald-500 hover:shadow-md active:scale-[0.98]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all ${
-                        isVerified ? 'bg-emerald-500 text-white' : 'bg-gray-100 group-hover:bg-emerald-50'
+          {isSameNeighborhood ? (
+            <div className="bg-white rounded-[2.5rem] border-2 border-emerald-100 p-8 shadow-inner bg-gradient-to-b from-emerald-50/50 to-white">
+              <h3 className="font-black text-emerald-900 flex items-center gap-2 mb-2 text-xl">
+                🤝 Community Witness
+              </h3>
+              <p className="text-sm text-emerald-800/70 mb-6 font-medium leading-relaxed">
+                Help your neighbors grow their impact! Tick off any environmental actions you witnessed {user.name.split(' ')[0]} performing today.
+              </p>
+              
+              <div className="space-y-3">
+                {REWARD_ACTIONS.map(action => {
+                  const isVerified = verifiedActions.has(action.id);
+                  return (
+                    <button
+                      key={action.id}
+                      disabled={isVerified}
+                      onClick={() => handleToggleVerify(action)}
+                      className={`w-full p-5 rounded-2xl flex items-center justify-between transition-all group ${
+                        isVerified 
+                          ? 'bg-emerald-100 border-2 border-emerald-500 cursor-default opacity-80' 
+                          : 'bg-white border-2 border-gray-100 hover:border-emerald-500 hover:shadow-md active:scale-[0.98]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all ${
+                          isVerified ? 'bg-emerald-500 text-white' : 'bg-gray-100 group-hover:bg-emerald-50'
+                        }`}>
+                          {isVerified ? '✓' : action.icon}
+                        </div>
+                        <div className="text-left">
+                          <div className={`font-black text-sm ${isVerified ? 'text-emerald-900' : 'text-gray-800'}`}>
+                            {action.title}
+                          </div>
+                          <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight">
+                            Worth ☘️ {action.points}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${
+                        isVerified 
+                          ? 'bg-emerald-500 border-emerald-500 text-white' 
+                          : 'bg-white border-gray-200 group-hover:border-emerald-500'
                       }`}>
-                        {isVerified ? '✓' : action.icon}
+                        {isVerified && <span className="text-sm font-bold animate-in zoom-in duration-300">✓</span>}
                       </div>
-                      <div className="text-left">
-                        <div className={`font-black text-sm ${isVerified ? 'text-emerald-900' : 'text-gray-800'}`}>
-                          {action.title}
-                        </div>
-                        <div className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight">
-                          Worth ☘️ {action.points}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${
-                      isVerified 
-                        ? 'bg-emerald-500 border-emerald-500 text-white' 
-                        : 'bg-white border-gray-200 group-hover:border-emerald-500'
-                    }`}>
-                      {isVerified && <span className="text-sm font-bold animate-in zoom-in duration-300">✓</span>}
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-stone-50 rounded-[2.5rem] border-2 border-dashed border-stone-200 p-8 text-center">
+              <div className="text-4xl mb-4 grayscale opacity-40">📍🤝</div>
+              <h3 className="font-black text-stone-800 mb-2">Neighborhood Restricted</h3>
+              <p className="text-sm text-stone-600 max-w-xs mx-auto">
+                To verify environmental actions, you must be in the same neighborhood chat as {user.name.split(' ')[0]}.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

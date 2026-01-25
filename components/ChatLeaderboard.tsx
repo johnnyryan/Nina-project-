@@ -8,19 +8,22 @@ interface ChatLeaderboardProps {
 
 export const ChatLeaderboard: React.FC<ChatLeaderboardProps> = ({ onBack }) => {
   return (
-    <div className="max-w-4xl mx-auto py-8">
+    <div className="max-w-4xl mx-auto py-8 relative">
+      <div className="absolute top-4 right-4 z-40">
+        <button 
+          onClick={onBack}
+          className="bg-white text-emerald-900 w-12 h-12 rounded-full flex items-center justify-center shadow-xl font-black hover:scale-110 active:scale-95 transition-all border-4 border-emerald-50"
+        >
+          ✕
+        </button>
+      </div>
+      
       <div className="bg-white rounded-[3rem] p-10 shadow-2xl border-t-8 border-emerald-600">
-        <div className="flex items-center justify-between mb-10">
+        <div className="flex items-center justify-between mb-10 pr-12">
           <div>
             <h2 className="text-4xl font-black text-emerald-900 mb-2">Neighborhood Rankings</h2>
             <p className="text-gray-500">The collective effort of Ireland's greenest communities.</p>
           </div>
-          <button 
-            onClick={onBack}
-            className="px-6 py-2 bg-gray-100 text-gray-500 font-bold rounded-xl hover:bg-gray-200 transition-colors"
-          >
-            Back
-          </button>
         </div>
 
         <div className="space-y-4">

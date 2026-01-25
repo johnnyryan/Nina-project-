@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { COLORS } from '../constants';
 
 interface WildlifeGamesProps {
   onEarnPoints: (points: number) => void;
+  onClose: () => void;
 }
 
-// Interfaces for game items to ensure type safety
 interface TriviaItem {
   q: string;
   a: string;
@@ -35,11 +35,14 @@ interface SanctuaryItem {
   id: string;
   name: string;
   icon: string;
+  cost: number;
   bioPoints: number;
   description: string;
+  synergyWith?: string[]; 
+  synergyBonus?: number;
+  color: string;
 }
 
-// Expanded pools for randomization
 const WILDLIFE_POOL = [
   { icon: '🦊', name: 'Red Fox' },
   { icon: '🦌', name: 'Red Deer' },
@@ -60,17 +63,13 @@ const TRIVIA_POOL: TriviaItem[] = [
   { q: "What is Ireland's only native reptile?", a: "Viviparous Lizard", options: ["Slow Worm", "Viviparous Lizard", "Grass Snake", "Adder"], fact: "The Viviparous Lizard is also known as the Common Lizard and is protected under Irish law." },
   { q: "Which large mammal was reintroduced to Killarney National Park?", a: "Red Deer", options: ["Fallow Deer", "Red Deer", "Roe Deer", "Muntjac Deer"], fact: "Red Deer are Ireland's largest land mammals and have been here since the last Ice Age." },
   { q: "What is the national bird of Ireland?", a: "Lapwing", options: ["Lapwing", "Robin", "Golden Eagle", "Wren"], fact: "The Northern Lapwing was declared the national bird by the Irish Wildlife Trust in 1990." },
-  { q: "Which sea creature is famous in Dingle Harbor?", a: "Dolphin", options: ["Whale", "Seal", "Dolphin", "Shark"], fact: "Fungie the Dingle Dolphin was a world-famous resident of the harbor for over 30 years." },
-  { q: "Ireland's longest river is the...", a: "Shannon", options: ["Liffey", "Lee", "Shannon", "Barrow"], fact: "The River Shannon is 360km long and flows through or between 11 counties." }
+  { q: "Which sea creature is famous in Dingle Harbor?", a: "Dolphin", options: ["Whale", "Seal", "Dolphin", "Shark"], fact: "Fungie the Dingle Dolphin was a world-famous resident of the harbor for over 30 years." }
 ];
 
 const LANDMARK_POOL: TriviaItem[] = [
   { q: "In which county would you find the Giant's Causeway?", a: "Antrim", options: ["Donegal", "Antrim", "Derry", "Down"], fact: "The Giant's Causeway consists of about 40,000 interlocking basalt columns." },
   { q: "The Rock of Cashel is a historic site in which county?", a: "Tipperary", options: ["Cork", "Tipperary", "Kilkenny", "Waterford"], fact: "It was the traditional seat of the kings of Munster." },
-  { q: "Which county is home to the stunning Cliffs of Moher?", a: "Clare", options: ["Galway", "Kerry", "Clare", "Mayo"], fact: "The cliffs rise to 214 metres at their highest point." },
-  { q: "Newgrange, the ancient passage tomb, is in which county?", a: "Meath", options: ["Meath", "Louth", "Kildare", "Dublin"], fact: "Newgrange is older than Stonehenge and the Great Pyramids of Giza." },
-  { q: "The Blarney Stone is located in which county?", a: "Cork", options: ["Cork", "Kerry", "Limerick", "Tipperary"], fact: "Legend says kissing the stone gives you 'the gift of the gab'." },
-  { q: "Mount Errigal, the highest peak in its county, is found where?", a: "Donegal", options: ["Donegal", "Sligo", "Mayo", "Galway"], fact: "Errigal is known for the pinkish glow of its quartzite in the setting sun." }
+  { q: "Which county is home to the stunning Cliffs of Moher?", a: "Clare", options: ["Galway", "Kerry", "Clare", "Mayo"], fact: "The cliffs rise to 214 metres at their highest point." }
 ];
 
 const GAEILGE_POOL: GaeilgeItem[] = [
@@ -78,12 +77,7 @@ const GAEILGE_POOL: GaeilgeItem[] = [
   { gaeilge: 'Sláinte', english: 'Health / Cheers' },
   { gaeilge: 'Madra', english: 'Dog' },
   { gaeilge: 'Cat', english: 'Cat' },
-  { gaeilge: 'Uisce', english: 'Water' },
-  { gaeilge: 'Bia', english: 'Food' },
-  { gaeilge: 'Éire', english: 'Ireland' },
-  { gaeilge: 'Glas', english: 'Green' },
-  { gaeilge: 'Slan', english: 'Goodbye' },
-  { gaeilge: 'Maith', english: 'Good' }
+  { gaeilge: 'Uisce', english: 'Water' }
 ];
 
 const SORTER_POOL: SorterItem[] = [
@@ -91,63 +85,65 @@ const SORTER_POOL: SorterItem[] = [
   { name: 'Plastic Bottle', icon: '🍼', bin: 'Recycle' },
   { name: 'Glass Jar', icon: '🫙', bin: 'Recycle' },
   { name: 'Crisp Packet', icon: '🍿', bin: 'Waste' },
-  { name: 'Newspaper', icon: '📰', bin: 'Recycle' },
-  { name: 'Banana Peel', icon: '🍌', bin: 'Compost' },
-  { name: 'Broken Mirror', icon: '🪞', bin: 'Waste' },
-  { name: 'Cardboard Box', icon: '📦', bin: 'Recycle' },
-  { name: 'Pizza Box (Greasy)', icon: '🍕', bin: 'Waste' },
-  { name: 'Tea Bag', icon: '☕', bin: 'Compost' }
+  { name: 'Banana Peel', icon: '🍌', bin: 'Compost' }
 ];
 
 const SCRAMBLE_POOL: ScrambleItem[] = [
   { original: 'PUFFIN', scramble: 'NIFPUF', hint: 'Sea bird with a orange beak' },
   { original: 'BADGER', scramble: 'REGDAB', hint: 'Striped nocturnal mammal' },
-  { original: 'SALMON', scramble: 'NOMLAS', hint: 'Fish known for leaping upstream' },
-  { original: 'CURLEW', scramble: 'WULREC', hint: 'Long-billed wading bird' },
-  { original: 'OTTER', scramble: 'RETTO', hint: 'Playful river mammal' },
-  { original: 'SWAN', scramble: 'WANS', hint: 'Large white water bird' },
-  { original: 'FOX', scramble: 'XOF', hint: 'Clever orange canine' },
-  { original: 'SEAL', scramble: 'ALES', hint: 'Sleek ocean mammal' }
+  { original: 'OTTER', scramble: 'RETTO', hint: 'Playful river mammal' }
 ];
 
 const SANCTUARY_ITEMS: SanctuaryItem[] = [
-  { id: 'tree_oak', name: 'Oak Tree', icon: '🌳', bioPoints: 50, description: 'Supports hundreds of species.' },
-  { id: 'fox', name: 'Red Fox', icon: '🦊', bioPoints: 100, description: 'Top predator for a balanced ecosystem.' },
-  { id: 'pond', name: 'Freshwater Pond', icon: '💧', bioPoints: 80, description: 'Vital for amphibians and insects.' },
-  { id: 'flower', name: 'Wildflowers', icon: '🌸', bioPoints: 20, description: 'Attracts bees and butterflies.' },
-  { id: 'stone', name: 'Ancient Stones', icon: '🪨', bioPoints: 15, description: 'Perfect shelter for lizards.' },
-  { id: 'deer', name: 'Red Deer', icon: '🦌', bioPoints: 120, description: 'Majestic forest wanderer.' },
-  { id: 'butterfly', name: 'Butterfly', icon: '🦋', bioPoints: 25, description: 'A sign of a healthy garden.' },
-  { id: 'mushroom', name: 'Fungi', icon: '🍄', bioPoints: 10, description: 'Breaks down organic matter.' },
-  { id: 'clover', name: 'Clover Patch', icon: '🍀', bioPoints: 5, description: 'Small but mighty for the soil.' }
+  { id: 'tree_oak', name: 'Oak Tree', icon: '🌳', cost: 100, bioPoints: 50, description: 'Supports hundreds of species. Loves being near Fungi!', synergyWith: ['mushroom'], synergyBonus: 30, color: 'emerald' },
+  { id: 'pond', name: 'Freshwater Pond', icon: '💧', cost: 120, bioPoints: 80, description: 'Vital for water life. Place near Stones for Frogs!', synergyWith: ['stone', 'otter'], synergyBonus: 40, color: 'blue' },
+  { id: 'flower', name: 'Wildflowers', icon: '🌸', cost: 30, bioPoints: 20, description: 'Attracts pollinators. Essential near Bees and Butterflies!', synergyWith: ['bee', 'butterfly'], synergyBonus: 50, color: 'pink' },
+  { id: 'fox', name: 'Red Fox', icon: '🦊', cost: 150, bioPoints: 100, description: 'Top predator. Keeps the ecosystem balanced. Loves Oak cover.', synergyWith: ['tree_oak'], synergyBonus: 30, color: 'orange' },
+  { id: 'otter', name: 'Eurasian Otter', icon: '🦦', cost: 160, bioPoints: 90, description: 'Playful river mammal. Needs clean water.', synergyWith: ['pond'], synergyBonus: 45, color: 'indigo' },
+  { id: 'butterfly', name: 'Butterfly', icon: '🦋', cost: 40, bioPoints: 25, description: 'Pollinator. Huge bonus near Wildflowers.', synergyWith: ['flower'], synergyBonus: 60, color: 'cyan' },
+  { id: 'bee', name: 'Irish Bee', icon: '🐝', cost: 40, bioPoints: 30, description: 'Crucial for nature. Thrives next to Wildflowers.', synergyWith: ['flower'], synergyBonus: 60, color: 'yellow' },
+  { id: 'mushroom', name: 'Fungi', icon: '🍄', cost: 20, bioPoints: 15, description: 'The Wood Wide Web. Helps Trees grow deeper roots.', synergyWith: ['tree_oak'], synergyBonus: 25, color: 'red' },
+  { id: 'stone', name: 'Stones', icon: '🪨', cost: 15, bioPoints: 10, description: 'Small shelter. Best placed near water for amphibians.', synergyWith: ['pond'], synergyBonus: 30, color: 'stone' }
 ];
 
 const shuffle = <T,>(array: T[]): T[] => [...array].sort(() => Math.random() - 0.5);
 
-export const WildlifeGames: React.FC<WildlifeGamesProps> = ({ onEarnPoints }) => {
-  const [activeGame, setActiveGame] = useState<'menu' | 'memory' | 'trivia' | 'sorter' | 'scramble' | 'gaeilge' | 'landmarks' | 'sanctuary'>('menu');
+export const WildlifeGames: React.FC<WildlifeGamesProps> = ({ onEarnPoints, onClose }) => {
+  const [activeGame, setActiveGame] = useState<'menu' | 'memory' | 'trivia' | 'landmarks' | 'gaeilge' | 'sorter' | 'scramble' | 'sanctuary'>('menu');
   
-  // Game States
+  // Memory Game State
   const [cards, setCards] = useState<{ id: number, icon: string, flipped: boolean, matched: boolean }[]>([]);
   const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
+
+  // Trivia/Landmarks State
   const [activeTrivia, setActiveTrivia] = useState<TriviaItem[]>([]);
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [showFact, setShowFact] = useState<string | null>(null);
+
+  // Gaeilge State
   const [activeGaeilge, setActiveGaeilge] = useState<GaeilgeItem[]>([]);
   const [gaeilgeIndex, setGaeilgeIndex] = useState(0);
   const [gaeilgeFeedback, setGaeilgeFeedback] = useState<string | null>(null);
+
+  // Sorter State
   const [activeSorter, setActiveSorter] = useState<SorterItem[]>([]);
   const [sorterIndex, setSorterIndex] = useState(0);
   const [sorterFeedback, setSorterFeedback] = useState<string | null>(null);
+
+  // Scramble State
   const [activeScramble, setActiveScramble] = useState<ScrambleItem[]>([]);
   const [scrambleIndex, setScrambleIndex] = useState(0);
   const [scrambleInput, setScrambleInput] = useState('');
   const [scrambleFeedback, setScrambleFeedback] = useState<'none' | 'correct' | 'wrong' | 'show'>('none');
 
-  // Sanctuary Game State
+  // Sanctuary Simulator State
   const [sanctuaryGrid, setSanctuaryGrid] = useState<(SanctuaryItem | null)[]>(Array(25).fill(null));
-  const [selectedSanctuaryItem, setSelectedSanctuaryItem] = useState<SanctuaryItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<SanctuaryItem | null>(null);
+  const [natureCredits, setNatureCredits] = useState(500);
+  const [discoveredSynergies, setDiscoveredSynergies] = useState<Set<string>>(new Set());
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
+  // Game Starters
   const startMemoryGame = () => {
     const selectedSpecies = shuffle(WILDLIFE_POOL).slice(0, 8);
     const deck = shuffle([...selectedSpecies, ...selectedSpecies])
@@ -157,12 +153,12 @@ export const WildlifeGames: React.FC<WildlifeGamesProps> = ({ onEarnPoints }) =>
     setActiveGame('memory');
   };
 
-  const startTrivia = (type: 'nature' | 'landmarks') => {
-    const pool = type === 'nature' ? TRIVIA_POOL : LANDMARK_POOL;
+  const startTrivia = (type: 'trivia' | 'landmarks') => {
+    const pool = type === 'trivia' ? TRIVIA_POOL : LANDMARK_POOL;
     setActiveTrivia(shuffle(pool).slice(0, 3));
     setCurrentQIndex(0);
     setShowFact(null);
-    setActiveGame(type === 'nature' ? 'trivia' : 'landmarks');
+    setActiveGame(type);
   };
 
   const startGaeilge = () => {
@@ -173,26 +169,21 @@ export const WildlifeGames: React.FC<WildlifeGamesProps> = ({ onEarnPoints }) =>
   };
 
   const startSorter = () => {
-    setActiveSorter(shuffle(SORTER_POOL).slice(0, 6));
+    setActiveSorter(shuffle(SORTER_POOL).slice(0, 5));
     setSorterIndex(0);
     setSorterFeedback(null);
     setActiveGame('sorter');
   };
 
   const startScramble = () => {
-    setActiveScramble(shuffle(SCRAMBLE_POOL).slice(0, 4));
+    setActiveScramble(shuffle(SCRAMBLE_POOL).slice(0, 3));
     setScrambleIndex(0);
     setScrambleInput('');
     setScrambleFeedback('none');
     setActiveGame('scramble');
   };
 
-  const startSanctuary = () => {
-    setSanctuaryGrid(Array(25).fill(null));
-    setSelectedSanctuaryItem(null);
-    setActiveGame('sanctuary');
-  };
-
+  // Memory Handlers
   const handleCardClick = (index: number) => {
     if (cards[index].flipped || cards[index].matched || flippedIndices.length === 2) return;
     const newCards = [...cards];
@@ -228,374 +219,301 @@ export const WildlifeGames: React.FC<WildlifeGamesProps> = ({ onEarnPoints }) =>
     }
   };
 
-  const handleTriviaAnswer = (option: string) => {
-    const question = activeTrivia[currentQIndex];
-    if (option === question.a) {
-      setShowFact(`Correct! ${question.fact}`);
-    } else {
-      setShowFact(`Not quite! The correct answer was "${question.a}". ${question.fact}`);
-    }
-  };
+  // Sanctuary Simulator Logic
+  const calculateScoreDetails = useMemo(() => {
+    let base = 0;
+    let synergy = 0;
+    const activeSynergies: Record<number, boolean> = {};
 
-  const handleGaeilgeMatch = (option: string) => {
-    const item = activeGaeilge[gaeilgeIndex];
-    if (option === item.english) {
-      setGaeilgeFeedback(`Correct! "${item.gaeilge}" means "${item.english}".`);
-    } else {
-      setGaeilgeFeedback(`Actually, "${item.gaeilge}" means "${item.english}". (You chose "${option}")`);
-    }
-  };
+    sanctuaryGrid.forEach((item, idx) => {
+      if (!item) return;
+      base += item.bioPoints;
 
-  const handleSort = (bin: string) => {
-    const item = activeSorter[sorterIndex];
-    if (bin === item.bin) {
-      setSorterFeedback(`Spot on! The ${item.name} belongs in the ${item.bin} bin.`);
-    } else {
-      setSorterFeedback(`Actually, the ${item.name} should go in the ${item.bin} bin.`);
-    }
-  };
+      const neighbors = [
+        idx - 5, idx + 5,
+        idx % 5 !== 0 ? idx - 1 : -1,
+        idx % 5 !== 4 ? idx + 1 : -1
+      ];
 
-  const handleScrambleSubmit = () => {
-    const word = activeScramble[scrambleIndex];
-    if (scrambleInput.toUpperCase().trim() === word.original) {
-      setScrambleFeedback('correct');
-    } else {
-      setScrambleFeedback('wrong');
-    }
-  };
+      neighbors.forEach(nIdx => {
+        if (nIdx >= 0 && nIdx < 25) {
+          const neighbor = sanctuaryGrid[nIdx];
+          if (neighbor && item.synergyWith?.includes(neighbor.id)) {
+            synergy += item.synergyBonus || 0;
+            activeSynergies[idx] = true;
+            activeSynergies[nIdx] = true;
+          }
+        }
+      });
+    });
 
-  const handlePlaceSanctuaryItem = (index: number) => {
-    if (!selectedSanctuaryItem) return;
+    return { total: base + synergy, base, synergy, activeSynergies };
+  }, [sanctuaryGrid]);
+
+  const handlePlace = (index: number) => {
+    if (!selectedItem) return;
+    let finalCredits = natureCredits;
+    if (sanctuaryGrid[index]) finalCredits += sanctuaryGrid[index]!.cost;
+    if (finalCredits < selectedItem.cost) return;
+
     const newGrid = [...sanctuaryGrid];
-    newGrid[index] = selectedSanctuaryItem;
+    newGrid[index] = selectedItem;
     setSanctuaryGrid(newGrid);
+    setNatureCredits(finalCredits - selectedItem.cost);
   };
 
-  const calculateBiodiversity = () => {
-    return sanctuaryGrid.reduce((sum, item) => sum + (item?.bioPoints || 0), 0);
+  const getMilestone = (score: number) => {
+    if (score >= 2000) return { name: "Ancient Wilds", color: "text-emerald-500", icon: "✨" };
+    if (score >= 1200) return { name: "Nature Reserve", color: "text-amber-500", icon: "🌳" };
+    if (score >= 600) return { name: "Healthy Grove", color: "text-blue-500", icon: "🌿" };
+    return { name: "Budding Sanctuary", color: "text-stone-400", icon: "🌱" };
   };
 
-  const handleSubmitSanctuary = () => {
-    const score = calculateBiodiversity();
-    if (score === 0) {
-      alert("Place some items in your sanctuary first!");
-      return;
-    }
-    const reward = Math.floor(score / 50) + 5; // Base reward + scaled reward
-    alert(`Stunning Sanctuary! You achieved a Biodiversity Score of ${score}. ☘️ +${reward} Shamrocks!`);
-    onEarnPoints(reward);
-    setActiveGame('menu');
-  };
+  const milestone = getMilestone(calculateScoreDetails.total);
+
+  if (activeGame === 'menu') {
+    return (
+      <div className="max-w-4xl mx-auto py-8 px-4 relative text-center">
+        <div className="bg-white rounded-[3rem] p-12 shadow-2xl border-t-8 border-emerald-900 overflow-hidden relative group">
+          <button onClick={onClose} className="absolute top-6 right-8 text-gray-400 font-bold hover:text-emerald-900">✕</button>
+          
+          <h2 className="text-5xl font-black text-emerald-900 mb-4 tracking-tighter">Wildlife Hub</h2>
+          <p className="text-gray-500 max-w-lg mx-auto mb-10 font-medium">Earn points through strategic simulation and quick-fire games.</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+            {/* Quick Games */}
+            <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100 flex flex-col items-center">
+              <span className="text-4xl mb-2">🎴</span>
+              <h3 className="font-black text-emerald-900 mb-2">Species Match</h3>
+              <button onClick={startMemoryGame} className="w-full py-2 bg-emerald-600 text-white font-bold rounded-xl">Play</button>
+            </div>
+            <div className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 flex flex-col items-center">
+              <span className="text-4xl mb-2">🦉</span>
+              <h3 className="font-black text-emerald-900 mb-2">Nature Trivia</h3>
+              <button onClick={() => startTrivia('trivia')} className="w-full py-2 bg-orange-500 text-white font-bold rounded-xl">Play</button>
+            </div>
+            <div className="bg-blue-50 p-6 rounded-[2rem] border border-blue-100 flex flex-col items-center">
+              <span className="text-4xl mb-2">🇮🇪</span>
+              <h3 className="font-black text-emerald-900 mb-2">Landmarks</h3>
+              <button onClick={() => startTrivia('landmarks')} className="w-full py-2 bg-blue-500 text-white font-bold rounded-xl">Play</button>
+            </div>
+            <div className="bg-purple-50 p-6 rounded-[2rem] border border-purple-100 flex flex-col items-center">
+              <span className="text-4xl mb-2">♻️</span>
+              <h3 className="font-black text-emerald-900 mb-2">Eco-Sorter</h3>
+              <button onClick={startSorter} className="w-full py-2 bg-purple-500 text-white font-bold rounded-xl">Play</button>
+            </div>
+            <div className="bg-pink-50 p-6 rounded-[2rem] border border-pink-100 flex flex-col items-center">
+              <span className="text-4xl mb-2">☘️</span>
+              <h3 className="font-black text-emerald-900 mb-2">Gaeilge</h3>
+              <button onClick={startGaeilge} className="w-full py-2 bg-pink-500 text-white font-bold rounded-xl">Play</button>
+            </div>
+            <div className="bg-amber-50 p-6 rounded-[2rem] border border-amber-100 flex flex-col items-center">
+              <span className="text-4xl mb-2">🧩</span>
+              <h3 className="font-black text-emerald-900 mb-2">Scramble</h3>
+              <button onClick={startScramble} className="w-full py-2 bg-amber-500 text-white font-bold rounded-xl">Play</button>
+            </div>
+
+            {/* Big Game */}
+            <button 
+              onClick={() => setActiveGame('sanctuary')}
+              className="lg:col-span-3 bg-emerald-900 p-8 rounded-[2.5rem] text-white text-left transition-all hover:scale-[1.01] shadow-xl group flex justify-between items-center"
+            >
+              <div>
+                <div className="text-5xl mb-2">🏞️</div>
+                <h3 className="text-2xl font-black mb-1">Sanctuary Simulator</h3>
+                <p className="text-emerald-100/60 text-sm">Build habitats with complex synergies.</p>
+              </div>
+              <div className="bg-white/10 px-6 py-4 rounded-3xl border border-white/20 text-center">
+                <div className="text-xs font-bold uppercase">Best Score</div>
+                <div className="text-3xl font-black">{calculateScoreDetails.total}</div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      {activeGame === 'menu' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border-t-8 border-emerald-600 text-center hover:translate-y-[-4px] transition-all">
-            <div className="text-5xl mb-4">🎴</div>
-            <h3 className="text-xl font-black text-emerald-900 mb-2">Species Match</h3>
-            <p className="text-sm text-gray-500 mb-6">Memory game featuring random native Irish animals.</p>
-            <button onClick={startMemoryGame} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg hover:bg-emerald-700">Play</button>
-          </div>
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border-t-8 border-orange-400 text-center hover:translate-y-[-4px] transition-all">
-            <div className="text-5xl mb-4">🦉</div>
-            <h3 className="text-xl font-black text-emerald-900 mb-2">Nature Trivia</h3>
-            <p className="text-sm text-gray-500 mb-6">Test your knowledge with 3 random nature questions.</p>
-            <button onClick={() => startTrivia('nature')} className="w-full py-3 bg-orange-50 text-orange-700 font-bold rounded-xl shadow-lg hover:bg-orange-100 border border-orange-200">Play</button>
-          </div>
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border-t-8 border-gold text-center hover:translate-y-[-4px] transition-all" style={{ borderTopColor: COLORS.gold }}>
-            <div className="text-5xl mb-4">🇮🇪</div>
-            <h3 className="text-xl font-black text-emerald-900 mb-2">Landmark Quest</h3>
-            <p className="text-sm text-gray-500 mb-6">Randomly selected Irish geography challenge.</p>
-            <button onClick={() => startTrivia('landmarks')} className="w-full py-3 bg-emerald-100 text-emerald-900 font-bold rounded-xl shadow-lg hover:bg-emerald-200">Play</button>
-          </div>
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border-t-8 border-emerald-400 text-center hover:translate-y-[-4px] transition-all">
-            <div className="text-5xl mb-4">🇮🇪</div>
-            <h3 className="text-xl font-black text-emerald-900 mb-2">Gaeilge Match</h3>
-            <p className="text-sm text-gray-500 mb-6">Learn 5 random Irish words each time you play.</p>
-            <button onClick={startGaeilge} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg hover:bg-emerald-700">Play</button>
-          </div>
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border-t-8 border-blue-400 text-center hover:translate-y-[-4px] transition-all">
-            <div className="text-5xl mb-4">♻️</div>
-            <h3 className="text-xl font-black text-emerald-900 mb-2">Eco-Sorter</h3>
-            <p className="text-sm text-gray-500 mb-6">Sort 6 random waste items into the correct bins.</p>
-            <button onClick={startSorter} className="w-full py-3 bg-blue-500 text-white font-bold rounded-xl shadow-lg hover:bg-blue-600">Play</button>
-          </div>
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border-t-8 border-purple-400 text-center hover:translate-y-[-4px] transition-all">
-            <div className="text-5xl mb-4">🧩</div>
-            <h3 className="text-xl font-black text-emerald-900 mb-2">Wildlife Scramble</h3>
-            <p className="text-sm text-gray-500 mb-6">Unscramble 4 random native species names.</p>
-            <button onClick={startScramble} className="w-full py-3 bg-purple-500 text-white font-bold rounded-xl shadow-lg hover:bg-purple-600">Play</button>
-          </div>
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border-t-8 border-emerald-500 text-center hover:translate-y-[-4px] transition-all lg:col-span-3">
-            <div className="text-5xl mb-4">🏞️</div>
-            <h3 className="text-2xl font-black text-emerald-900 mb-2">Nature Sanctuary Builder</h3>
-            <p className="text-sm text-gray-500 mb-6">Design your own Irish nature reserve. Place species to increase biodiversity!</p>
-            <button onClick={startSanctuary} className="max-w-xs mx-auto w-full py-4 bg-emerald-900 text-white font-black rounded-2xl shadow-xl hover:bg-black transition-colors">Start Building</button>
-          </div>
-        </div>
-      )}
-
-      {activeGame === 'memory' && (
-        <div className="bg-white rounded-[3rem] p-8 shadow-2xl border border-emerald-100">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-2xl font-black text-emerald-900">Species Match</h3>
-            <button onClick={() => setActiveGame('menu')} className="text-gray-400 hover:text-emerald-600 font-bold text-sm">Exit</button>
-          </div>
-          <div className="grid grid-cols-4 gap-3 max-w-sm mx-auto">
-            {cards.map((card, idx) => (
-              <div
-                key={idx}
-                onClick={() => handleCardClick(idx)}
-                className={`aspect-square rounded-xl cursor-pointer transition-all duration-300 transform flex items-center justify-center text-3xl shadow-sm ${
-                  card.flipped || card.matched ? 'bg-emerald-50' : 'bg-emerald-800'
-                }`}
-              >
-                {(card.flipped || card.matched) ? card.icon : '☘️'}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {(activeGame === 'trivia' || activeGame === 'landmarks') && activeTrivia.length > 0 && (
-        <div className="bg-white rounded-[3rem] p-8 shadow-2xl border border-emerald-100">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-2xl font-black text-emerald-900">{activeGame === 'trivia' ? 'Nature Trivia' : 'Landmark Quest'}</h3>
-            <span className="text-orange-500 font-bold text-sm">Q {currentQIndex + 1}/{activeTrivia.length}</span>
-          </div>
-          <div className="mb-10">
-            <p className="text-lg font-bold text-gray-800 mb-6 leading-relaxed">{activeTrivia[currentQIndex].q}</p>
-            <div className="grid grid-cols-1 gap-3">
-              {activeTrivia[currentQIndex].options.map(opt => (
-                <button
-                  key={opt}
-                  disabled={showFact !== null}
-                  onClick={() => handleTriviaAnswer(opt)}
-                  className={`p-4 rounded-xl font-bold transition-all border-2 text-left ${
-                    showFact ? (opt === activeTrivia[currentQIndex].a ? 'bg-emerald-100 border-emerald-500 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800') 
-                    : 'bg-white border-emerald-50 text-emerald-900 hover:border-emerald-500 hover:bg-emerald-50'
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </div>
-          {showFact && (
-            <div className="bg-emerald-50 p-6 rounded-2xl border-2 border-emerald-100 animate-in fade-in slide-in-from-bottom duration-500">
-              <p className="text-emerald-900 text-sm font-medium italic mb-4">"{showFact}"</p>
-              <button onClick={() => {
-                if (currentQIndex < activeTrivia.length - 1) {
-                  setCurrentQIndex(prev => prev + 1);
-                  setShowFact(null);
-                } else {
-                  alert(`Game Complete! ☘️ +10 Shamrocks!`);
-                  onEarnPoints(10);
-                  setActiveGame('menu');
-                }
-              }} className="px-8 py-2 bg-emerald-600 text-white font-bold rounded-lg shadow-md hover:bg-emerald-700 text-sm">Next Question</button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeGame === 'gaeilge' && activeGaeilge.length > 0 && (
-        <div className="bg-white rounded-[3rem] p-8 shadow-2xl border border-emerald-100 text-center">
-          <div className="flex justify-between items-center mb-8 text-left">
-            <h3 className="text-2xl font-black text-emerald-900">Gaeilge Match</h3>
-            <button onClick={() => setActiveGame('menu')} className="text-gray-400 font-bold text-sm">Exit</button>
-          </div>
-          <div className="mb-12">
-            <p className="text-sm font-bold text-emerald-600 uppercase tracking-widest mb-2">Translate this word:</p>
-            <div className="text-5xl font-black text-emerald-900 mb-2">{activeGaeilge[gaeilgeIndex].gaeilge}</div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {shuffle(activeGaeilge).map((item: GaeilgeItem) => (
-              <button 
-                key={item.english}
-                disabled={gaeilgeFeedback !== null}
-                onClick={() => handleGaeilgeMatch(item.english)}
-                className={`p-4 rounded-2xl font-bold transition-all border-2 text-center ${
-                  gaeilgeFeedback ? (item.english === activeGaeilge[gaeilgeIndex].english ? 'bg-emerald-100 border-emerald-500 text-emerald-800' : 'bg-gray-50 border-gray-100 text-gray-300')
-                  : 'bg-white border-emerald-50 text-emerald-800 hover:border-emerald-500 hover:bg-emerald-50 shadow-sm'
-                }`}
-              >
-                {item.english}
-              </button>
-            ))}
-          </div>
-          {gaeilgeFeedback && (
-            <div className="mt-8 bg-emerald-50 p-6 rounded-2xl border-2 border-emerald-100 animate-in fade-in slide-in-from-bottom duration-500">
-              <p className="text-emerald-900 text-sm font-medium italic mb-4">{gaeilgeFeedback}</p>
-              <button onClick={() => {
-                if (gaeilgeIndex < activeGaeilge.length - 1) {
-                  setGaeilgeIndex(prev => prev + 1);
-                  setGaeilgeFeedback(null);
-                } else {
-                  alert(`Maith thú! Gaeilge Match complete! ☘️ +15 Shamrocks!`);
-                  onEarnPoints(15);
-                  setActiveGame('menu');
-                }
-              }} className="px-8 py-2 bg-emerald-600 text-white font-bold rounded-lg shadow-md hover:bg-emerald-700 text-sm">Continue</button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeGame === 'sorter' && activeSorter.length > 0 && (
-        <div className="bg-white rounded-[3rem] p-8 shadow-2xl border border-blue-100 text-center">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-2xl font-black text-blue-900">Eco-Sorter</h3>
-            <button onClick={() => setActiveGame('menu')} className="text-gray-400 font-bold text-sm">Exit</button>
-          </div>
-          <div className="mb-12">
-            <div className="text-8xl mb-4 animate-bounce">{activeSorter[sorterIndex].icon}</div>
-            <p className="text-xl font-bold text-gray-700">{activeSorter[sorterIndex].name}</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button disabled={sorterFeedback !== null} onClick={() => handleSort('Compost')} className="p-6 bg-emerald-100 text-emerald-800 font-black rounded-2xl border-2 border-emerald-300 hover:bg-emerald-200 disabled:opacity-50">🍂 Compost</button>
-            <button disabled={sorterFeedback !== null} onClick={() => handleSort('Recycle')} className="p-6 bg-blue-100 text-blue-800 font-black rounded-2xl border-2 border-blue-300 hover:bg-blue-200 disabled:opacity-50">♻️ Recycle</button>
-            <button disabled={sorterFeedback !== null} onClick={() => handleSort('Waste')} className="p-6 bg-stone-100 text-stone-800 font-black rounded-2xl border-2 border-stone-300 hover:bg-stone-200 disabled:opacity-50">🗑️ Waste</button>
-          </div>
-          {sorterFeedback && (
-            <div className="mt-8 bg-blue-50 p-6 rounded-2xl border-2 border-blue-100 animate-in fade-in slide-in-from-bottom duration-500">
-              <p className="text-blue-900 text-sm font-medium italic mb-4">{sorterFeedback}</p>
-              <button onClick={() => {
-                if (sorterIndex < activeSorter.length - 1) {
-                  setSorterIndex(prev => prev + 1);
-                  setSorterFeedback(null);
-                } else {
-                  alert(`Sorting complete! ☘️ +10 Shamrocks!`);
-                  onEarnPoints(10);
-                  setActiveGame('menu');
-                }
-              }} className="px-8 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 text-sm">Next Item</button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeGame === 'scramble' && activeScramble.length > 0 && (
-        <div className="bg-white rounded-[3rem] p-8 shadow-2xl border border-purple-100 text-center">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-2xl font-black text-purple-900">Wildlife Scramble</h3>
-            <button onClick={() => setActiveGame('menu')} className="text-gray-400 font-bold text-sm">Exit</button>
-          </div>
-          <div className="mb-8">
-            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">Unscramble this:</p>
-            <div className="text-4xl font-black text-purple-600 tracking-tighter mb-4">
-              {scrambleFeedback === 'show' ? activeScramble[scrambleIndex].original : activeScramble[scrambleIndex].scramble}
-            </div>
-            <p className="text-stone-500 italic text-sm">Hint: {activeScramble[scrambleIndex].hint}</p>
-          </div>
-          <div className="space-y-4 max-w-sm mx-auto">
-            {scrambleFeedback !== 'correct' && scrambleFeedback !== 'show' ? (
-              <>
-                <input
-                  type="text"
-                  value={scrambleInput}
-                  onChange={(e) => setScrambleInput(e.target.value.toUpperCase())}
-                  onKeyPress={(e) => e.key === 'Enter' && handleScrambleSubmit()}
-                  className={`w-full p-4 text-center text-2xl font-black rounded-2xl border-4 outline-none transition-all ${
-                    scrambleFeedback === 'wrong' ? 'border-red-500 bg-red-50' : 'border-purple-100 bg-purple-50 focus:border-purple-500'
-                  }`}
-                  placeholder="GUESS WORD"
-                />
-                <div className="flex gap-2">
-                  <button onClick={handleScrambleSubmit} className="flex-1 py-4 bg-purple-600 text-white font-black rounded-2xl shadow-lg hover:bg-purple-700">Check</button>
-                  <button onClick={() => setScrambleFeedback('show')} className="px-4 py-4 bg-gray-100 text-gray-500 font-bold rounded-2xl border border-gray-200 text-xs">Show Answer</button>
+    <div className="max-w-6xl mx-auto py-4 px-4 h-[90vh] flex flex-col gap-4 animate-in fade-in duration-500">
+      {activeGame === 'sanctuary' ? (
+        <>
+          <div className="bg-white rounded-[2rem] p-4 shadow-xl border border-emerald-50 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-4">
+              <button onClick={() => setActiveGame('menu')} className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center font-black">←</button>
+              <div>
+                <h2 className="text-xl font-black text-emerald-900 leading-none">Sanctuary Simulator</h2>
+                <div className={`text-[10px] font-black uppercase tracking-widest ${milestone.color} flex items-center gap-1 mt-0.5`}>
+                  {milestone.icon} {milestone.name}
                 </div>
-              </>
-            ) : (
-              <div className="animate-in fade-in slide-in-from-bottom duration-500">
-                <p className="text-emerald-600 font-black mb-4">
-                  {scrambleFeedback === 'correct' ? 'Proper legend! Correct!' : `The word was ${activeScramble[scrambleIndex].original}.`}
-                </p>
-                <button onClick={() => {
-                  if (scrambleIndex < activeScramble.length - 1) {
-                    setScrambleIndex(prev => prev + 1);
-                    setScrambleInput('');
-                    setScrambleFeedback('none');
-                  } else {
-                    alert(`Unscrambled! ☘️ +10 Shamrocks!`);
-                    onEarnPoints(10);
-                    setActiveGame('menu');
-                  }
-                }} className="w-full py-4 bg-purple-600 text-white font-black rounded-2xl shadow-lg">Next Word</button>
               </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {activeGame === 'sanctuary' && (
-        <div className="bg-white rounded-[3rem] p-8 shadow-2xl border border-emerald-100 flex flex-col gap-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-3xl font-black text-emerald-900">Sanctuary Builder</h3>
-              <p className="text-sm text-gray-500">Place items on the grid to create a thriving nature reserve.</p>
             </div>
-            <div className="flex flex-col items-end">
-              <div className="bg-emerald-100 text-emerald-800 px-4 py-2 rounded-2xl font-black flex items-center gap-2">
-                <span>🦋</span> Bio Score: {calculateBiodiversity()}
-              </div>
-              <button onClick={() => setActiveGame('menu')} className="text-gray-400 font-bold text-xs mt-2 hover:text-emerald-600">Exit Game</button>
+            <div className="flex gap-3">
+               <div className="bg-emerald-950 text-emerald-50 px-4 py-2 rounded-2xl flex flex-col items-end shadow-inner border border-emerald-800">
+                  <span className="text-[8px] font-black uppercase opacity-60">Credits</span>
+                  <span className="text-lg font-black leading-none">☘️ {natureCredits}</span>
+               </div>
+               <div className="bg-amber-400 text-amber-900 px-4 py-2 rounded-2xl flex flex-col items-end shadow-lg border border-amber-500">
+                  <span className="text-[8px] font-black uppercase opacity-60">Bio-Score</span>
+                  <span className="text-lg font-black leading-none">{calculateScoreDetails.total}</span>
+               </div>
             </div>
           </div>
-
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* The Grid */}
-            <div className="flex-1">
-              <div className="grid grid-cols-5 gap-1 bg-emerald-50 p-2 rounded-3xl border-2 border-emerald-100 shadow-inner max-w-md mx-auto aspect-square">
-                {sanctuaryGrid.map((item, idx) => (
+          <div className="flex-1 flex gap-6 overflow-hidden min-h-0">
+             <div className="flex-1 bg-emerald-950 rounded-[3rem] p-4 shadow-2xl border-8 border-emerald-900 flex items-center justify-center relative">
+               <div className="grid grid-cols-5 gap-2 w-full max-w-lg aspect-square">
+                 {sanctuaryGrid.map((item, idx) => (
+                   <button
+                     key={idx}
+                     onClick={() => handlePlace(idx)}
+                     onMouseEnter={() => setHoverIdx(idx)}
+                     onMouseLeave={() => setHoverIdx(null)}
+                     className={`aspect-square rounded-[1.2rem] transition-all flex items-center justify-center relative ${item ? 'bg-white shadow-xl scale-95' : 'bg-emerald-900/30'}`}
+                   >
+                     {item ? <span className="text-3xl">{item.icon}</span> : selectedItem && hoverIdx === idx && <span className="text-3xl opacity-20">{selectedItem.icon}</span>}
+                   </button>
+                 ))}
+               </div>
+             </div>
+             <div className="w-64 bg-white rounded-[2.5rem] p-6 shadow-xl border border-emerald-50 flex flex-col shrink-0">
+               <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-800 mb-4">Palette</h4>
+               <div className="grid grid-cols-3 gap-2 mb-6">
+                 {SANCTUARY_ITEMS.map(item => (
+                   <button
+                     key={item.id}
+                     onClick={() => setSelectedItem(item)}
+                     className={`aspect-square rounded-xl flex flex-col items-center justify-center transition-all border-4 ${selectedItem?.id === item.id ? 'border-emerald-600 bg-emerald-50' : 'border-transparent bg-gray-50'}`}
+                   >
+                     <span className="text-xl">{item.icon}</span>
+                     <span className="text-[8px] font-black text-emerald-800">☘️{item.cost}</span>
+                   </button>
+                 ))}
+               </div>
+               {selectedItem && (
+                 <div className="p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-100 flex-1">
+                   <h5 className="font-black text-emerald-900 text-sm">{selectedItem.name}</h5>
+                   <p className="text-[9px] text-gray-500 leading-tight italic mt-1">"{selectedItem.description}"</p>
+                 </div>
+               )}
+               <button 
+                 onClick={() => {
+                   onEarnPoints(Math.floor(calculateScoreDetails.total / 100));
+                   setActiveGame('menu');
+                 }}
+                 className="w-full mt-6 py-4 bg-emerald-900 text-white font-black rounded-2xl"
+               >
+                 Submit Score
+               </button>
+             </div>
+          </div>
+        </>
+      ) : (
+        <div className="flex-1 flex flex-col bg-white rounded-[3rem] p-12 shadow-2xl relative">
+          <button onClick={() => setActiveGame('menu')} className="absolute top-8 right-12 text-gray-400 font-bold hover:text-emerald-900">Back to Hub</button>
+          
+          {activeGame === 'memory' && (
+            <div className="flex-1 flex flex-col items-center">
+              <h2 className="text-3xl font-black text-emerald-900 mb-8">Species Match</h2>
+              <div className="grid grid-cols-4 gap-4 max-w-sm">
+                {cards.map((card, idx) => (
                   <button
                     key={idx}
-                    onClick={() => handlePlaceSanctuaryItem(idx)}
-                    className={`aspect-square rounded-xl transition-all duration-200 flex items-center justify-center text-3xl hover:bg-emerald-200/50 ${
-                      item ? 'bg-white shadow-sm' : 'bg-transparent'
-                    } ${selectedSanctuaryItem && !item ? 'hover:scale-105 hover:shadow-md border-2 border-dashed border-emerald-200' : 'border-2 border-transparent'}`}
+                    onClick={() => handleCardClick(idx)}
+                    className={`w-16 h-16 rounded-2xl text-3xl flex items-center justify-center transition-all ${card.flipped || card.matched ? 'bg-emerald-50' : 'bg-emerald-900'}`}
                   >
-                    {item?.icon}
+                    {card.flipped || card.matched ? card.icon : '☘️'}
                   </button>
                 ))}
               </div>
             </div>
+          )}
 
-            {/* The Inventory */}
-            <div className="lg:w-72 bg-emerald-50 rounded-[2.5rem] p-6 border-2 border-emerald-100">
-              <h4 className="font-black text-emerald-900 mb-4 text-sm uppercase tracking-widest">Select Item</h4>
-              <div className="grid grid-cols-3 gap-2">
-                {SANCTUARY_ITEMS.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => setSelectedSanctuaryItem(item)}
-                    className={`aspect-square rounded-2xl flex items-center justify-center text-3xl transition-all border-4 ${
-                      selectedSanctuaryItem?.id === item.id 
-                        ? 'border-emerald-600 bg-white scale-110 shadow-lg' 
-                        : 'border-transparent bg-white/50 hover:bg-white hover:border-emerald-200'
-                    }`}
-                    title={item.name}
+          {(activeGame === 'trivia' || activeGame === 'landmarks') && activeTrivia.length > 0 && (
+            <div className="flex-1 flex flex-col items-center">
+              <h2 className="text-3xl font-black text-emerald-900 mb-8">{activeGame === 'trivia' ? 'Nature Trivia' : 'Landmarks'}</h2>
+              <p className="text-xl font-bold mb-8 text-center max-w-lg">{activeTrivia[currentQIndex].q}</p>
+              <div className="grid grid-cols-1 gap-3 w-full max-w-md">
+                {activeTrivia[currentQIndex].options.map(opt => (
+                  <button 
+                    key={opt}
+                    onClick={() => {
+                      if (opt === activeTrivia[currentQIndex].a) {
+                        if (currentQIndex < activeTrivia.length - 1) setCurrentQIndex(prev => prev + 1);
+                        else { onEarnPoints(10); setActiveGame('menu'); }
+                      } else {
+                        alert("Not quite! Try another game.");
+                        setActiveGame('menu');
+                      }
+                    }}
+                    className="p-4 bg-emerald-50 border-2 border-emerald-100 rounded-2xl font-bold hover:border-emerald-500"
                   >
-                    {item.icon}
+                    {opt}
                   </button>
                 ))}
               </div>
-              {selectedSanctuaryItem && (
-                <div className="mt-6 p-4 bg-white rounded-2xl shadow-sm animate-in fade-in zoom-in duration-300">
-                  <div className="font-black text-emerald-900 text-sm mb-1">{selectedSanctuaryItem.name}</div>
-                  <div className="text-[10px] text-emerald-600 font-bold mb-2 uppercase">+ {selectedSanctuaryItem.bioPoints} Bio Points</div>
-                  <p className="text-[10px] text-gray-500 leading-tight">{selectedSanctuaryItem.description}</p>
-                </div>
-              )}
+            </div>
+          )}
+
+          {activeGame === 'gaeilge' && (
+            <div className="flex-1 flex flex-col items-center">
+              <h2 className="text-3xl font-black text-emerald-900 mb-8">Gaeilge Match</h2>
+              <div className="text-5xl font-black text-emerald-600 mb-12">{activeGaeilge[gaeilgeIndex].gaeilge}</div>
+              <div className="grid grid-cols-2 gap-4 w-full max-w-md">
+                {activeGaeilge.map(item => (
+                  <button
+                    key={item.english}
+                    onClick={() => {
+                      if (item.english === activeGaeilge[gaeilgeIndex].english) {
+                        if (gaeilgeIndex < activeGaeilge.length - 1) setGaeilgeIndex(prev => prev + 1);
+                        else { onEarnPoints(15); setActiveGame('menu'); }
+                      }
+                    }}
+                    className="p-4 bg-pink-50 border-2 border-pink-100 rounded-2xl font-bold hover:border-pink-500"
+                  >
+                    {item.english}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeGame === 'sorter' && (
+            <div className="flex-1 flex flex-col items-center">
+              <h2 className="text-3xl font-black text-emerald-900 mb-8">Eco-Sorter</h2>
+              <div className="text-8xl mb-4">{activeSorter[sorterIndex].icon}</div>
+              <p className="text-2xl font-black mb-12">{activeSorter[sorterIndex].name}</p>
+              <div className="grid grid-cols-3 gap-4 w-full max-w-md">
+                <button onClick={() => { if (activeSorter[sorterIndex].bin === 'Compost') if (sorterIndex < activeSorter.length - 1) setSorterIndex(prev => prev + 1); else { onEarnPoints(10); setActiveGame('menu'); } }} className="p-6 bg-emerald-100 rounded-3xl font-black">🍂 Compost</button>
+                <button onClick={() => { if (activeSorter[sorterIndex].bin === 'Recycle') if (sorterIndex < activeSorter.length - 1) setSorterIndex(prev => prev + 1); else { onEarnPoints(10); setActiveGame('menu'); } }} className="p-6 bg-blue-100 rounded-3xl font-black">♻️ Recycle</button>
+                <button onClick={() => { if (activeSorter[sorterIndex].bin === 'Waste') if (sorterIndex < activeSorter.length - 1) setSorterIndex(prev => prev + 1); else { onEarnPoints(10); setActiveGame('menu'); } }} className="p-6 bg-stone-100 rounded-3xl font-black">🗑️ Waste</button>
+              </div>
+            </div>
+          )}
+
+          {activeGame === 'scramble' && (
+            <div className="flex-1 flex flex-col items-center">
+              <h2 className="text-3xl font-black text-emerald-900 mb-8">Wildlife Scramble</h2>
+              <div className="text-5xl font-black text-amber-600 mb-4 tracking-widest">{activeScramble[scrambleIndex].scramble}</div>
+              <p className="text-stone-400 italic mb-8">Hint: {activeScramble[scrambleIndex].hint}</p>
+              <input 
+                type="text" 
+                value={scrambleInput} 
+                onChange={e => setScrambleInput(e.target.value.toUpperCase())}
+                className="p-4 text-center text-3xl font-black border-4 border-emerald-100 rounded-3xl outline-none mb-4"
+              />
               <button 
-                onClick={handleSubmitSanctuary}
-                className="w-full mt-6 py-4 bg-emerald-600 text-white font-black rounded-2xl shadow-lg hover:bg-emerald-700 active:scale-95 transition-all"
+                onClick={() => {
+                  if (scrambleInput === activeScramble[scrambleIndex].original) {
+                    if (scrambleIndex < activeScramble.length - 1) { setScrambleIndex(prev => prev + 1); setScrambleInput(''); }
+                    else { onEarnPoints(10); setActiveGame('menu'); }
+                  }
+                }}
+                className="px-12 py-4 bg-amber-500 text-white font-black rounded-3xl shadow-lg"
               >
-                Submit Sanctuary
+                Check
               </button>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

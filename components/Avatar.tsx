@@ -27,7 +27,7 @@ export const Avatar: React.FC<AvatarProps> = ({ icon, rank, isMaster, isCaptain,
     xl: 'w-14 h-14 text-2xl -right-3 -bottom-3'
   };
 
-  const crownSizeClasses = {
+  const roleIndicatorSizeClasses = {
     sm: 'w-6 h-6 text-sm -top-3 left-1/2 -translate-x-1/2',
     md: 'w-10 h-10 text-xl -top-6 left-1/2 -translate-x-1/2',
     lg: 'w-14 h-14 text-3xl -top-8 left-1/2 -translate-x-1/2',
@@ -46,22 +46,24 @@ export const Avatar: React.FC<AvatarProps> = ({ icon, rank, isMaster, isCaptain,
     3: '🥉'
   };
 
-  const showGoldCrown = isMaster || isCaptain;
-  const showSilverCrown = !showGoldCrown && isAssistantCaptain;
-
   return (
     <div className={`relative inline-flex items-center justify-center rounded-[1.2rem] bg-emerald-50 border-2 border-emerald-100 shadow-sm ${sizeClasses[size]} ${className}`}>
-      {showGoldCrown && (
-        <div className={`absolute z-10 drop-shadow-lg animate-bounce ${crownSizeClasses[size]}`}>
+      {/* Chat Captain Crown */}
+      {(isCaptain || isMaster) && (
+        <div className={`absolute z-10 drop-shadow-lg animate-bounce ${roleIndicatorSizeClasses[size]}`}>
           👑
         </div>
       )}
-      {showSilverCrown && (
-        <div className={`absolute z-10 drop-shadow-lg animate-bounce opacity-80 ${crownSizeClasses[size]}`}>
-          🥈👑
+      
+      {/* Assistant Captain Emoji */}
+      {isAssistantCaptain && !isCaptain && !isMaster && (
+        <div className={`absolute z-10 drop-shadow-lg animate-bounce ${roleIndicatorSizeClasses[size]}`}>
+          🥈
         </div>
       )}
+
       {icon}
+
       {rank && rank >= 1 && rank <= 3 && (
         <div 
           className={`absolute rounded-full border-2 border-white shadow-md flex items-center justify-center text-white ${ribbonSizeClasses[size]}`}

@@ -52,3 +52,84 @@ export const verifyActionImage = async (
     };
   }
 };
+
+export const verifyNeighborhood = async (
+  county: string,
+  neighborhood: string
+): Promise<{ verified: boolean; message: string }> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const prompt = `You are a geographic validator for the "Help Ireland" initiative.
+  Verify if "${neighborhood}" is a legitimate neighborhood, townland, or village within County ${county}, Ireland.
+  
+  Respond in JSON format:
+  - "verified": boolean
+  - "message": string (A brief explanation of why it is or isn't valid, in a professional and helpful Irish tone).`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            verified: { type: Type.BOOLEAN },
+            message: { type: Type.STRING },
+          },
+          required: ["verified", "message"],
+        },
+      },
+    });
+
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("Neighborhood Verification Error:", error);
+    return {
+      verified: false,
+      message: "Unable to verify geographic data at this time.",
+    };
+  }
+};
+
+export const verifyStreet = async (
+  county: string,
+  neighborhood: string,
+  street: string
+): Promise<{ verified: boolean; message: string }> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const prompt = `You are a geographic validator for the "Help Ireland" initiative.
+  Verify if "${street}" is a legitimate street, road, or avenue within the neighborhood of "${neighborhood}", County ${county}, Ireland.
+  
+  Respond in JSON format:
+  - "verified": boolean
+  - "message": string (A brief explanation of why it is or isn't valid, in a professional and helpful Irish tone).`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            verified: { type: Type.BOOLEAN },
+            message: { type: Type.STRING },
+          },
+          required: ["verified", "message"],
+        },
+      },
+    });
+
+    return JSON.parse(response.text);
+  } catch (error) {
+    console.error("Street Verification Error:", error);
+    return {
+      verified: false,
+      message: "Unable to verify street data at this time.",
+    };
+  }
+};

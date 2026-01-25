@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserProfile, RewardAction, AppView, ShopItem, Badge, ActionType, LeaderboardEntry } from './types';
+import { UserProfile, RewardAction, AppView, ShopItem, Badge, ActionType, LeaderboardEntry, ChatMessage } from './types';
 import { REWARD_ACTIONS, MOCK_LEADERBOARD, MOCK_USERS, COLORS, SHOP_ITEMS, BADGES } from './constants';
 import { ActionCard } from './components/ActionCard';
 import { Leaderboard } from './components/Leaderboard';
@@ -36,7 +36,7 @@ const App: React.FC = () => {
       bio: '',
       avatar: '👤',
       activeTheme: 'th_default',
-      totalShamrocks: 0, // Reset to zero as requested
+      totalShamrocks: 0, // Users now start with zero shamrock points
       goldenShamrocks: 0,
       isMaster: false,
       isCaptain: false,
@@ -46,11 +46,15 @@ const App: React.FC = () => {
       completedActions: 0,
       completedActionTypes: [],
       joinedDate: new Date().toISOString(),
-      badges: [], // Start with zero badges as requested
+      badges: [],
       unlockedAvatars: ['👤'],
       unlockedThemes: ['th_default'],
       rank: 0
     };
+  });
+
+  const [showIntegrityNotice, setShowIntegrityNotice] = useState<boolean>(() => {
+    return localStorage.getItem('help-ireland-integrity-v1') !== 'true';
   });
 
   const [activeView, setActiveView] = useState<AppView>(
@@ -59,8 +63,10 @@ const App: React.FC = () => {
   const [selectedAction, setSelectedAction] = useState<RewardAction | null>(null);
   const [viewingUser, setViewingUser] = useState<UserProfile | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
-  // Filter leaderboard to only show people in the same county
+  const activeThemeItem = SHOP_ITEMS.find(t => t.id === userProfile.activeTheme) || SHOP_ITEMS.find(t => t.id === 'th_default')!;
+
   const countyLeaderboard = MOCK_LEADERBOARD.filter(e => e.county === userProfile.county);
 
   useEffect(() => {
@@ -71,7 +77,6 @@ const App: React.FC = () => {
     const newBadges = [...userProfile.badges];
     let newUnlockedAvatars = [...userProfile.unlockedAvatars];
 
-    // Master Status Calculation
     const allAvailableBadgesCount = BADGES.length;
     const purchasableAvatarsCount = SHOP_ITEMS.filter(i => i.type === 'avatar' && !i.earnedOnly).length + 1;
     const purchasableThemesCount = SHOP_ITEMS.filter(i => i.type === 'theme').length;
@@ -82,17 +87,13 @@ const App: React.FC = () => {
     
     const isMaster = hasAllAvatars && hasAllThemes && hasAllBadges;
 
-    // Roles Logic: First to join is Captain, second is Assistant
     const neighborhoodNeighbors = MOCK_USERS.filter(u => u.neighborhood === userProfile.neighborhood);
     const neighborCount = neighborhoodNeighbors.length;
     
     const isFirstJoiner = userProfile.neighborhood !== '' && neighborCount === 0;
-    const isSecondJoiner = userProfile.neighborhood !== '' && neighborCount === 1;
-    
     const isCaptain = isMaster || isFirstJoiner;
-    const isAssistantCaptain = !isCaptain && isSecondJoiner;
+    const isAssistantCaptain = !isCaptain && neighborCount === 1; 
 
-    // Calculate ranks and badges based on the user's progress
     if (userProfile.totalShamrocks > 0) { 
       if (myRank === 1 && !newBadges.includes('rank1')) {
         newBadges.push('rank1');
@@ -153,6 +154,11 @@ const App: React.FC = () => {
     localStorage.setItem('help-ireland-profile-v5', JSON.stringify(userProfile));
   }, [userProfile.totalShamrocks, userProfile.completedActions, userProfile.rank, userProfile.joinedDate, userProfile.completedActionTypes, userProfile.county, userProfile.neighborhood, userProfile.unlockedThemes, userProfile.badges, userProfile.unlockedAvatars]);
 
+  const handleIntegrityPledge = () => {
+    localStorage.setItem('help-ireland-integrity-v1', 'true');
+    setShowIntegrityNotice(false);
+  };
+
   const handleActionComplete = (points: number, actionId: ActionType) => {
     setUserProfile(prev => {
       const newActionTypes = prev.completedActionTypes.includes(actionId) 
@@ -190,13 +196,28 @@ const App: React.FC = () => {
     alert(`Weekly Goal Issued! 🏆 Team mission: "${goal}"`);
   };
 
+  const handleRequestWitness = (action: RewardAction) => {
+    const witnessMsg: ChatMessage = {
+      id: `witness_${Date.now()}`,
+      userId: userProfile.id,
+      userName: userProfile.name,
+      userAvatar: userProfile.avatar,
+      text: `📢 WITNESS REQUEST: I need a neighbor to verify my ${action.title}!`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      roomType: 'neighborhood',
+      roomName: userProfile.neighborhood,
+      verificationActionId: action.id,
+      isVerified: false
+    };
+    setChatMessages(prev => [...prev, witnessMsg]);
+  };
+
   const handleTickGoal = (role: 'captain' | 'assistant') => {
     setUserProfile(prev => {
       const newState = { ...prev };
       if (role === 'captain') newState.hasCaptainTickedGoal = true;
       if (role === 'assistant') newState.hasAssistantTickedGoal = true;
 
-      // Both Captain and Assistant Captain must tick off the mission
       if (newState.hasCaptainTickedGoal && newState.hasAssistantTickedGoal) {
         newState.goldenShamrocks += 1000;
         newState.activeGoal = undefined;
@@ -250,10 +271,33 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-28">
-      <header className="pt-10 pb-20 px-8 rounded-b-[4rem] shadow-2xl relative overflow-hidden text-white transition-colors duration-500" 
-        style={{ backgroundColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.bg || COLORS.emeraldDeep }}>
+      {showIntegrityNotice && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-500">
+          <div className="bg-white rounded-[3rem] max-w-lg w-full p-10 text-center shadow-2xl border-4 border-emerald-500 animate-in zoom-in duration-300">
+            <div className="text-6xl mb-6">☘️🤝</div>
+            <h2 className="text-3xl font-black text-emerald-900 mb-4">Integrity Pledge</h2>
+            <p className="text-xl text-emerald-800 font-bold italic mb-8 leading-relaxed">
+              "Please don't cheat, I hope that you will help not cheat."
+            </p>
+            <p className="text-gray-500 mb-10 text-sm">
+              Help Ireland is built on community trust. Our environment depends on real actions. By continuing, you agree to be honest in your reporting.
+            </p>
+            <button 
+              onClick={handleIntegrityPledge}
+              className="w-full py-5 bg-emerald-800 text-white font-black rounded-3xl shadow-xl hover:bg-black transition-all active:scale-95 text-lg uppercase tracking-widest"
+            >
+              I Pledge to be Honest
+            </button>
+          </div>
+        </div>
+      )}
+
+      <header className="pt-10 pb-20 px-8 rounded-b-[4rem] shadow-2xl relative overflow-hidden text-white transition-all duration-700" 
+        style={{ 
+          backgroundImage: `${activeThemeItem.themeConfig?.pattern}, ${activeThemeItem.themeConfig?.bg}`
+        }}>
         <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none select-none">
-          <span className="text-[200px]">☘️</span>
+          <span className="text-[200px]">{activeThemeItem.icon}</span>
         </div>
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
           <div className="flex flex-col">
@@ -263,7 +307,7 @@ const App: React.FC = () => {
               {userProfile.neighborhood && <span className="text-white/70 text-sm font-medium">Active in {userProfile.neighborhood}</span>}
               {(userProfile.isCaptain || userProfile.isAssistantCaptain) && (
                 <span className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest border border-white/20 animate-pulse">
-                  👑 {userProfile.isMaster ? 'Shamrock Master' : userProfile.isCaptain ? 'Chat Captain' : 'Assistant Captain'}
+                   {userProfile.isMaster ? '👑 Shamrock Master' : userProfile.isCaptain ? '👑 Chat Captain' : '🥈 Assistant Captain'}
                 </span>
               )}
             </div>
@@ -378,7 +422,9 @@ const App: React.FC = () => {
                     <button 
                       onClick={() => setActiveView('chat-leaderboard')}
                       className="w-full bg-emerald-900 p-8 rounded-[3rem] text-white relative overflow-hidden group shadow-2xl flex flex-col text-left transition-all hover:scale-[1.02]"
-                      style={{ backgroundColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.accent || COLORS.emeraldMid }}
+                      style={{ 
+                        backgroundImage: `${activeThemeItem.themeConfig?.pattern}, ${activeThemeItem.themeConfig?.bg}`
+                      }}
                     >
                       <h4 className="text-2xl font-black mb-2">Chat Leaderboard</h4>
                       <p className="text-white/70 text-sm mb-6">See which neighborhood is making the biggest splash in Ireland.</p>
@@ -397,6 +443,8 @@ const App: React.FC = () => {
                   onViewUser={handleViewUser} 
                   onGoalAward={handleIssueGoal}
                   onTickGoal={handleTickGoal}
+                  externalMessages={chatMessages}
+                  onClose={() => setActiveView('home')}
                 />
               </div>
             )}
@@ -409,7 +457,7 @@ const App: React.FC = () => {
 
             {activeView === 'games' && (
               <div className="animate-in fade-in slide-in-from-bottom duration-500">
-                <WildlifeGames onEarnPoints={handleEarnPoints} />
+                <WildlifeGames onEarnPoints={handleEarnPoints} onClose={() => setActiveView('home')} />
               </div>
             )}
 
@@ -418,37 +466,22 @@ const App: React.FC = () => {
                 user={userProfile} 
                 onUpdate={updateProfile} 
                 onPurchase={handlePurchase}
+                onClose={() => setActiveView('home')}
               />
             )}
 
             {activeView === 'about' && (
-              <AboutPage />
+              <AboutPage onClose={() => setActiveView('home')} />
             )}
           </>
         )}
       </main>
 
-      {selectedAction && (
-        <VerificationModal 
-          action={selectedAction} 
-          onClose={() => setSelectedAction(null)} 
-          onSuccess={handleActionComplete} 
-        />
-      )}
-
-      {viewingUser && (
-        <UserProfileView 
-          user={viewingUser} 
-          onClose={() => setViewingUser(null)} 
-          onVerifyForUser={handleNeighborVerify}
-        />
-      )}
-
       <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-xl border border-emerald-100 flex items-center p-3 z-50 shadow-2xl rounded-[2.5rem] w-[95%] max-w-2xl overflow-x-auto no-scrollbar">
         <button 
           onClick={() => setActiveView('home')} 
           className={`flex flex-col items-center flex-1 transition-all py-2 px-1 rounded-2xl min-w-[70px] ${activeView === 'home' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
-          style={activeView === 'home' ? { backgroundColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.accent || '' } : {}}
+          style={activeView === 'home' ? { backgroundColor: activeThemeItem.themeConfig?.accent || '' } : {}}
         >
           <span className="text-2xl">🌍</span>
           <span className="text-[10px] font-bold uppercase mt-1">Actions</span>
@@ -456,7 +489,7 @@ const App: React.FC = () => {
         <button 
           onClick={() => setActiveView('chat')} 
           className={`flex flex-col items-center flex-1 transition-all py-2 px-1 rounded-2xl min-w-[70px] ${activeView === 'chat' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
-          style={activeView === 'chat' ? { backgroundColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.accent || '' } : {}}
+          style={activeView === 'chat' ? { backgroundColor: activeThemeItem.themeConfig?.accent || '' } : {}}
         >
           <span className="text-2xl">💬</span>
           <span className="text-[10px] font-bold uppercase mt-1">Chat</span>
@@ -464,7 +497,7 @@ const App: React.FC = () => {
         <button 
           onClick={() => setActiveView('games')} 
           className={`flex flex-col items-center flex-1 transition-all py-2 px-1 rounded-2xl min-w-[70px] ${activeView === 'games' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
-          style={activeView === 'games' ? { backgroundColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.accent || '' } : {}}
+          style={activeView === 'games' ? { backgroundColor: activeThemeItem.themeConfig?.accent || '' } : {}}
         >
           <span className="text-2xl">🦉</span>
           <span className="text-[10px] font-bold uppercase mt-1">Games</span>
@@ -472,7 +505,7 @@ const App: React.FC = () => {
         <button 
           onClick={() => setActiveView('about')} 
           className={`flex flex-col items-center flex-1 transition-all py-2 px-1 rounded-2xl min-w-[70px] ${activeView === 'about' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
-          style={activeView === 'about' ? { backgroundColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.accent || '' } : {}}
+          style={activeView === 'about' ? { backgroundColor: activeThemeItem.themeConfig?.accent || '' } : {}}
         >
           <span className="text-2xl">✨</span>
           <span className="text-[10px] font-bold uppercase mt-1">About</span>
@@ -480,7 +513,7 @@ const App: React.FC = () => {
         <button 
           onClick={() => setActiveView('profile')} 
           className={`flex flex-col items-center flex-1 transition-all py-2 px-1 rounded-2xl min-w-[70px] ${activeView === 'profile' ? 'bg-emerald-800 text-white shadow-lg' : 'text-gray-400 hover:text-emerald-600'}`}
-          style={activeView === 'profile' ? { backgroundColor: SHOP_ITEMS.find(t => t.id === userProfile.activeTheme)?.themeConfig?.accent || '' } : {}}
+          style={activeView === 'profile' ? { backgroundColor: activeThemeItem.themeConfig?.accent || '' } : {}}
         >
           <span className="text-2xl">👤</span>
           <span className="text-[10px] font-bold uppercase mt-1">Profile</span>
@@ -500,6 +533,24 @@ const App: React.FC = () => {
             </div>
           ))}
         </div>
+      )}
+      
+      {selectedAction && (
+        <VerificationModal 
+          action={selectedAction} 
+          onClose={() => setSelectedAction(null)} 
+          onSuccess={handleActionComplete}
+          onRequestWitness={handleRequestWitness}
+        />
+      )}
+
+      {viewingUser && (
+        <UserProfileView 
+          user={viewingUser} 
+          currentUserNeighborhood={userProfile.neighborhood}
+          onClose={() => setViewingUser(null)}
+          onVerifyForUser={handleNeighborVerify}
+        />
       )}
     </div>
   );

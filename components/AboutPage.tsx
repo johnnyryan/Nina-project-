@@ -2,9 +2,22 @@
 import React from 'react';
 import { COLORS } from '../constants';
 
-export const AboutPage: React.FC = () => {
+interface AboutPageProps {
+  onClose: () => void;
+}
+
+export const AboutPage: React.FC<AboutPageProps> = ({ onClose }) => {
   return (
-    <div className="max-w-3xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom duration-700">
+    <div className="max-w-3xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom duration-700 relative">
+      <div className="absolute top-4 right-4 z-40">
+        <button 
+          onClick={onClose}
+          className="bg-white text-emerald-900 w-12 h-12 rounded-full flex items-center justify-center shadow-2xl font-black hover:scale-110 active:scale-95 transition-all border-4 border-emerald-50"
+        >
+          ✕
+        </button>
+      </div>
+      
       <div className="bg-white rounded-[3rem] p-10 md:p-16 shadow-2xl border-b-8 border-emerald-600 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none select-none">
           <span className="text-[150px]">🇮🇪</span>

@@ -40,11 +40,11 @@ export interface UserProfile {
   goldenShamrocks: number; 
   isMaster: boolean; 
   isCaptain: boolean; 
-  isAssistantCaptain: boolean; // New: 2nd person to join
+  isAssistantCaptain: boolean;
   weeklyGoalSetAt?: string; 
   activeGoal?: string; 
-  hasCaptainTickedGoal?: boolean; // Progress tracking
-  hasAssistantTickedGoal?: boolean; // Progress tracking
+  hasCaptainTickedGoal?: boolean;
+  hasAssistantTickedGoal?: boolean;
   completedActions: number;
   completedActionTypes: ActionType[]; 
   joinedDate: string;
@@ -61,11 +61,13 @@ export interface ChatMessage {
   userAvatar: string;
   text: string;
   timestamp: string;
-  roomType: 'neighborhood' | 'street' | 'group';
+  roomType: 'neighborhood' | 'street' | 'group' | 'leadership';
   roomName: string;
   isGoal?: boolean; 
   isCaptain?: boolean; 
-  isAssistantCaptain?: boolean; // New: Highlight Assistant Captain
+  isAssistantCaptain?: boolean;
+  verificationActionId?: ActionType; // If this message is a request for verification
+  isVerified?: boolean; // If this request has been fulfilled
   attachment?: {
     type: 'image' | 'video';
     url: string;
